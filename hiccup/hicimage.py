@@ -1,6 +1,5 @@
-import abc
 import numpy as np
-from .transform import *
+from typing import List
 
 
 class HicImage:
@@ -8,10 +7,11 @@ class HicImage:
     Represents a HIC image which has dimensions and a compression style
     """
 
-    def __init__(self, rows: int, columns: int, transform: Transform, payload: np.ndarray):
+    def __init__(self, rows: int, columns: int, style: str, transform_params: List[str], payload: np.ndarray):
         self._rows = rows
         self._columns = columns
-        self._transform = transform
+        self._style = style
+        self._params = transform_params
         self._payload = payload
 
     @staticmethod
@@ -23,7 +23,8 @@ class HicImage:
         return HicImage(
             header_content["rows"],
             header_content["columns"],
-            header_content["transform"],
+            header_content["style"],
+            header_content["transform_params"],
             content
         )
 
@@ -34,7 +35,8 @@ class HicImage:
         return {
             "rows": int(splits[0]),
             "columns": int(splits[1]),
-            "transform": Transform.from_string(splits[2], splits[3:])
+            "style": splits[2],
+            "transform_params": splits[3:]
         }
 
     def _output_path(self, path: str):
@@ -43,8 +45,8 @@ class HicImage:
         return path + ".hic"
 
     def _format_header(self):
-        return "{} {} {} {}".format(self._rows, self._columns, self.transform.style(),
-                                    self._transform.format_parameters)
+        return "{} {} {} {}".format(self._rows, self._columns, self._style,
+                                    " ".join(self._params))
 
     def _format_payload(self):
         return np.array2string(self._payload)
@@ -65,5 +67,5 @@ class HicImage:
         return self._columns
 
     @property
-    def transform(self):
-        return self._transform
+    def style(self):
+        return self._style
