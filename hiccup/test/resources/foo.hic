@@ -1,2 +1,2 @@
-100 200 FourierTransform JpegQuantization
+100 200 Fourier JpegQuantization
 12345

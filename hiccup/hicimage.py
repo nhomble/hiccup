@@ -43,7 +43,7 @@ class HicImage:
         return path + ".hic"
 
     def _format_header(self):
-        return "{} {} {} {}".format(self._rows, self._columns, self.transform.__class__.__name__,
+        return "{} {} {} {}".format(self._rows, self._columns, self.transform.style(),
                                     self._transform.format_parameters)
 
     def _format_payload(self):
