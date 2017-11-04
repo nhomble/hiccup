@@ -1,4 +1,3 @@
-from pydoc import locate
 import os
 import unittest
 
