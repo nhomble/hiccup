@@ -1,6 +1,14 @@
 import numpy as np
 import rawpy
 import cv2
+import scipy
+import scipy.fftpack
+
+"""
+Helpful functions ranging from image loading to extending signal transforms for sequences into 2d. 
+
+Credits for dct2() comes from Mark Newman <mejn@umich.edu>
+"""
 
 
 def open_raw_img(path):
@@ -49,3 +57,31 @@ def debug_img(img):
         cv2.imshow("debugging image", img)
         if cv2.waitKey() == ord('q'):
             break
+
+
+def dct2(matrix: np.ndarray):
+    M = matrix.shape[0]
+    N = matrix.shape[1]
+    a = np.empty([M, N], float)
+    b = np.empty([M, N], float)
+
+    for i in range(M):
+        a[i, :] = scipy.fftpack.dct(matrix[i, :])
+    for j in range(N):
+        b[:, j] = scipy.fftpack.dct(a[:, j])
+
+    return b
+
+
+def idct2(matrix: np.ndarray):
+    M = matrix.shape[0]
+    N = matrix.shape[1]
+    a = np.empty([M, N], float)
+    y = np.empty([M, N], float)
+
+    for i in range(M):
+        a[i, :] = scipy.fftpack.idct(matrix[i, :])
+    for j in range(N):
+        y[:, j] = scipy.fftpack.idct(a[:, j])
+
+    return y
