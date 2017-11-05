@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import functools
 import numpy as np
 import rawpy
 import cv2
@@ -114,3 +115,26 @@ def idct2(matrix: np.ndarray):
         y[:, j] = scipy.fftpack.idct(a[:, j])
 
     return y
+
+
+def zigzag(matrix: np.ndarray):
+    """
+    Linearize the 2d matrix into a 1d array by diagonals. This way, the bulk of 0 are clumped together at the end and
+    compress better with Huffman coding
+
+    Ok not the prettiest.. but I cannot figure how to do this the np-way
+    """
+    d = {}
+    for y, row in enumerate(matrix):
+        for x, ele in enumerate(matrix[y]):
+            if x + y in d:
+                d[x + y].append(ele)
+            else:
+                d[x + y] = [ele]
+    combined = []
+    for i in range(len(d)):
+        if i % 2 == 0:
+            combined.append(d[i])
+        else:
+            combined.append(list(reversed(d[i])))
+    return functools.reduce(lambda x, y: x + y, combined)

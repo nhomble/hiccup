@@ -73,3 +73,14 @@ class UtilsTest(unittest.TestCase):
         blocks = utils.split_matrix(matrix, 4)
         merged = utils.merge_blocks(blocks, matrix.shape)
         self.assertTrue(np.array_equiv(matrix, merged))
+
+    def test_zigzag(self):
+        matrix = np.array([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ])
+        d = utils.zigzag(matrix)
+        self.assertTrue(np.array_equiv([
+            1, 4, 2, 3, 5, 7, 8, 6, 9
+        ], d))
