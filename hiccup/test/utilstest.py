@@ -84,3 +84,18 @@ class UtilsTest(unittest.TestCase):
         self.assertTrue(np.array_equiv([
             1, 4, 2, 3, 5, 7, 8, 6, 9
         ], d))
+
+    def test_izigzag(self):
+        arr = np.array([1, 4, 2, 3, 5, 7, 8, 6, 9])
+        m = utils.izigzag(arr, (3, 3))
+        self.assertTrue(np.array_equiv(np.array([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ]), m))
+
+    def test_zigzag_inverse(self):
+        matrix = np.random.randint(0, 256, (17, 19))
+        ziggy = utils.zigzag(matrix)
+        imat = utils.izigzag(ziggy, matrix.shape)
+        self.assertTrue(np.array_equiv(matrix, imat))

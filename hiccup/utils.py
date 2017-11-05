@@ -117,24 +117,46 @@ def idct2(matrix: np.ndarray):
     return y
 
 
-def zigzag(matrix: np.ndarray):
+def _zigzag_indices(matrix: np.ndarray):
     """
-    Linearize the 2d matrix into a 1d array by diagonals. This way, the bulk of 0 are clumped together at the end and
-    compress better with Huffman coding
-
     Ok not the prettiest.. but I cannot figure how to do this the np-way
+
     """
     d = {}
     for y, row in enumerate(matrix):
-        for x, ele in enumerate(matrix[y]):
+        for x, ele in enumerate(row):
             if x + y in d:
-                d[x + y].append(ele)
+                d[x + y].append((y, x))
             else:
-                d[x + y] = [ele]
+                d[x + y] = [(y, x)]
     combined = []
     for i in range(len(d)):
         if i % 2 == 0:
             combined.append(d[i])
         else:
             combined.append(list(reversed(d[i])))
-    return functools.reduce(lambda x, y: x + y, combined)
+    return functools.reduce(lambda a, b: a + b, combined)
+
+
+def zigzag(matrix: np.ndarray):
+    """
+    Linearize the 2d matrix into a 1d array by diagonals. This way, the bulk of 0 are clumped together at the end and
+    compress better with Huffman coding
+
+    """
+    indices = _zigzag_indices(matrix)
+    result = list(map(lambda t: matrix[t[0]][t[1]], indices))
+    return result
+
+
+def izigzag(arr: np.ndarray, shape: Tuple[int, int]):
+    """
+    Recreate our matrix from the diagonals
+    """
+    mat = np.zeros(shape)
+    indices = _zigzag_indices(mat)
+    zipped = zip(arr, indices)
+    for ele in zipped:
+        y, x = ele[1]
+        mat[y][x] = ele[0]
+    return mat
