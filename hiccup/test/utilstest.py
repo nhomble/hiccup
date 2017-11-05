@@ -54,3 +54,22 @@ class UtilsTest(unittest.TestCase):
         opposite = random * scalar * -1
         zeros = np.add(opposite, idct)
         self.assertTrue(np.sum(zeros) < 1e-10)
+
+    def test_merge_blocks(self):
+        blocks = np.array([
+            [[1, 2], [7, 8]], [[3, 4], [9, 10]], [[5, 6], [11, 12]],
+            [[13, 14], [0, 0]], [[15, 16], [0, 0]], [[17, 18], [0, 0]]
+        ])
+        merged = utils.merge_blocks(blocks, (4, 6))
+        self.assertTrue(np.array_equiv(np.array([
+            [1, 2, 3, 4, 5, 6],
+            [7, 8, 9, 10, 11, 12],
+            [13, 14, 15, 16, 17, 18],
+            [0, 0, 0, 0, 0, 0]
+        ]), merged))
+
+    def test_split_merge(self):
+        matrix = np.random.randint(0, 256, (8, 12))
+        blocks = utils.split_matrix(matrix, 4)
+        merged = utils.merge_blocks(blocks, matrix.shape)
+        self.assertTrue(np.array_equiv(matrix, merged))

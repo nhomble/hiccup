@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 import rawpy
 import cv2
@@ -7,7 +9,6 @@ import scipy.fftpack
 """
 Helpful functions ranging from image loading to extending signal transforms for sequences into 2d. 
 
-Credits for dct2() comes from Mark Newman <mejn@umich.edu>
 """
 
 
@@ -52,6 +53,23 @@ def split_matrix(matrix, N):
     return form_blocks
 
 
+def merge_blocks(blocks: np.ndarray, shape):
+    """
+    After doing block level transformations, reconstruct a 2d matrix
+    """
+    y, x = shape
+    num, N, _ = blocks.shape
+    if y * x != num * N * N:
+        raise RuntimeError("Incompatible dimensions")
+
+    d4 = blocks.reshape(y // N, x // N, N, N)
+    block_mats = [
+        [np.matrix(d4[y][x]) for x in range(d4[y].shape[0])]
+        for y in range(d4.shape[0])
+    ]
+    return np.array(np.bmat(block_mats))
+
+
 def debug_img(img):
     while True:
         cv2.imshow("debugging image", img)
@@ -60,6 +78,12 @@ def debug_img(img):
 
 
 def dct2(matrix: np.ndarray):
+    """
+    Computed dct type II
+
+    Credits for dct2() comes from Mark Newman <mejn@umich.edu>
+    """
+
     M = matrix.shape[0]
     N = matrix.shape[1]
     a = np.empty([M, N], float)
@@ -74,6 +98,11 @@ def dct2(matrix: np.ndarray):
 
 
 def idct2(matrix: np.ndarray):
+    """
+    Inverse dct type II
+
+    Credits for idct2() comes from Mark Newman <mejn@umich.edu>
+    """
     M = matrix.shape[0]
     N = matrix.shape[1]
     a = np.empty([M, N], float)
