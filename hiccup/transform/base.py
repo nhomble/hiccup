@@ -24,11 +24,11 @@ class Transform:
         pass
 
     @abc.abstractmethod
-    def encode(self, img: np.ndarray) -> HicImage:
+    def compress(self, img: np.ndarray) -> HicImage:
         """
         Perform image compression with the chosen transformation
         """
         pass
 
-    def compress(self, data: np.ndarray):
+    def encode(self, data: np.ndarray):
         raise NotImplemented("need to use huffman coding here")

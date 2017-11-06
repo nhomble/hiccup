@@ -14,5 +14,5 @@ class WaveletTransform(Transform):
     def format_parameters(self):
         return "".join(self._params)
 
-    def encode(self, img: np.ndarray):
+    def compress(self, img: np.ndarray):
         pass
