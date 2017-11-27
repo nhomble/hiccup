@@ -1,24 +1,12 @@
 import argparse
+from tkinter import Tk
 
-from hiccup.compressor import Compressor
-from hiccup.decompressor import Decompressor
+import hiccup.run as run
+from hiccup.ui.app import BelchUI
 
 """
 Provide a simple GUI and command line tool to perform compressing and decompressing of images
 """
-
-
-def compress(path, output, style):
-    if style is None:
-        print("Style cannot be none")
-        return
-    c = Compressor.load(path)
-    c.shrink(style, output)
-
-
-def decompress(path, output):
-    d = Decompressor.load(path)
-    d.explode(output)
 
 
 def is_gui(args):
@@ -26,7 +14,9 @@ def is_gui(args):
 
 
 def run_gui():
-    pass
+    root = Tk()
+    _ = BelchUI(root)
+    root.mainloop()
 
 
 def main():
@@ -37,14 +27,14 @@ def main():
     parser.add_argument('--style', '-s', metavar='STYLE', nargs=1, choices=[
         'FOURIER', 'WAVELET'
     ], help='dictate which compression algorithm we use')
-    parser.add_argument('--output', '-o', metavar='OUT', nargs=1, help='output path')
+    parser.add_argument('--output', '-o', metavar='OUT', nargs=1, help='output path', default='.')
     args = parser.parse_args()
     if is_gui(args):
         run_gui()
     elif args.compress is not None:
-        compress(args.compress, args.output, args.style)
+        run.compress(args.compress, args.output, args.style)
     elif args.decompress is not None:
-        decompress(args.decompress, args.output)
+        run.decompress(args.decompress, args.output)
     else:
         raise RuntimeError("Illegal state")
 
