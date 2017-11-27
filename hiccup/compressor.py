@@ -8,9 +8,8 @@ class Compressor:
         img = iohelper.open_raw_img(img_path)
         return Compressor(img)
 
-    def __init__(self, img: np.ndarray, style: str, ):
+    def __init__(self, img: np.ndarray):
         self._img = img
-        self._style = style
 
-    def shrink(self, output_path: str):
+    def shrink(self, style: str, output_path: str):
         pass

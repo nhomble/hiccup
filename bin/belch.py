@@ -12,8 +12,8 @@ def compress(path, output, style):
     if style is None:
         print("Style cannot be none")
         return
-    c = Compressor.load(path, style)
-    c.shrink(output)
+    c = Compressor.load(path)
+    c.shrink(style, output)
 
 
 def decompress(path, output):
