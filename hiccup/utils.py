@@ -2,7 +2,6 @@ from typing import Tuple
 
 import functools
 import numpy as np
-import rawpy
 import cv2
 import scipy
 import scipy.fftpack
@@ -11,19 +10,6 @@ import scipy.fftpack
 Helpful functions ranging from image loading to extending signal transforms for sequences into 2d. 
 
 """
-
-
-def open_raw_img(path):
-    """
-    open image from path
-    :param path: path to raw image
-    :return:
-    """
-
-    # opencv cannot handle raw images
-    with rawpy.imread(path) as raw:
-        rgb = raw.postprocess()
-    return rgb
 
 
 def pad_matrix(matrix: np.ndarray, N):
