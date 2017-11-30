@@ -156,3 +156,21 @@ class TransformTest(unittest.TestCase):
         rec = trans.wavelet_merge_resolutions(pyr, trans.Wavelet.DAUBECHIE)
         diff = np.sum(np.subtract(mat, rec))
         self.assertTrue(diff < 1e-8)
+
+    def test_threshold(self):
+        arr = np.array([1, 2, 3, 4, 5])
+        out = trans.threshold(arr, 2, 100)
+        self.assertTrue(np.array_equiv(out, np.array([100, 2, 3, 4, 5])))
+
+    def test_threshold_by_quality(self):
+        i = [
+            np.array(range(50)),
+            np.array(range(50, 100))
+        ]
+        out = trans.threshold_channel_by_quality(i, q_factor=.05)
+        first = out[0]
+        second = out[1]
+
+        self.assertEqual(2, len(out))
+        self.assertEqual(np.sum(first), 0)
+        self.assertEqual(np.sum(second), sum(range(94, 100)))

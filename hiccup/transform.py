@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import scipy
 import scipy.fftpack
+from scipy import stats
 import pywt
 
 import hiccup.utils as utils
@@ -196,3 +197,27 @@ def wavelet_merge_resolutions(pyramid: List[np.ndarray], wavelet: Wavelet):
     tuples = utils.group_tuples(pyramid[1:], 3)
     coeffs = [pyramid[0]] + tuples
     return pywt.waverec2(coeffs, wavelet.value)
+
+
+def threshold(arr: np.ndarray, thresh, replace=0):
+    """
+    Supposedly scipy.stats has this, but I must not have the version. I'll search for it later.
+    """
+
+    def _vec(ele):
+        if ele < thresh:
+            return replace
+        else:
+            return ele
+
+    vector = np.vectorize(_vec)
+    return vector(arr)
+
+
+def threshold_channel_by_quality(parts: List[np.ndarray], q_factor=.05):
+    """
+    Actually apply the threshold after calculating the value. We take an array in parts since most likely
+    our call is from the Wavelet compression where we have a series of images from the filter bank.
+    """
+    val = qz.quality_threshold_value(parts, q_factor)
+    return [threshold(i, val) for i in parts]

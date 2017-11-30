@@ -28,5 +28,5 @@ class QuantizationTest(unittest.TestCase):
             np.array(range(50)),
             np.array(range(50, 100))
         ]
-        out = qnt.quality_threshold(i, q_factor=.05)
+        out = qnt.quality_threshold_value(i, q_factor=.05)
         self.assertEqual(out, 94)
