@@ -160,7 +160,7 @@ def down_sample(matrix: np.ndarray, factor=2):
     return cv2.pyrDown(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)
 
 
-def dct_channel(channel, block_size=8, quantization_table="common"):
+def dct_channel(channel: np.ndarray, quantization_table: qz.QTables, block_size=8):
     """
     Apply the Discrete Cosine transform on a channel of our image to later be encoded
     """
@@ -169,8 +169,7 @@ def dct_channel(channel, block_size=8, quantization_table="common"):
 
     blocks = split_matrix(offset, block_size)
     transformed_blocks = [dct2(block) for block in blocks]
-    table = qz.table[quantization_table]
-    dividend = np.divide(transformed_blocks, table)
-    quantized = np.round(dividend)
+    qnt_blocks = [qz.dead_quantize(block, quantization_table) for block in transformed_blocks]
+    quantized = np.array(qnt_blocks)
     result = merge_blocks(quantized, channel.shape).astype(channel.dtype)
     return result

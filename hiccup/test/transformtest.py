@@ -3,7 +3,7 @@ import numpy as np
 
 from hiccup.test.testhelper import *
 import hiccup.transform as trans
-
+import hiccup.quantization as qnt
 
 class TransformTest(unittest.TestCase):
     def test_padding(self):
@@ -129,10 +129,10 @@ class TransformTest(unittest.TestCase):
 
     def test_dct_null(self):
         img = np.zeros((120, 80)).astype(np.uint8)
-        out = trans.dct_channel(img)
-        self.assertEqual(0, np.sum(out))
+        out = trans.dct_channel(img, qnt.QTables.JPEG_CHROMINANCE)
+        self.assertTrue(np.sum(out) > 0)
 
     def test_dct_ones(self):
         img = np.ones((120, 80)).astype(np.uint8)
-        out = trans.dct_channel(img)
+        out = trans.dct_channel(img, qnt.QTables.JPEG_LUMINANCE)
         self.assertTrue(np.sum(out) > 0)
