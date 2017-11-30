@@ -146,3 +146,21 @@ def izigzag(arr: np.ndarray, shape: Tuple[int, int]):
         y, x = ele[1]
         mat[y][x] = ele[0]
     return mat
+
+
+def up_sample(matrix: np.ndarray, factor=2):
+    """
+    Upsample our array, thankfully opencv does most of the work for us
+    """
+    x, y = matrix.shape
+    new_shape = (x * factor, y * factor)
+    return cv2.pyrUp(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)
+
+
+def down_sample(matrix: np.ndarray, factor=2):
+    """
+    Downsample our array, thankfully opencv does this too
+    """
+    x, y = matrix.shape
+    new_shape = (x // factor, y // factor)
+    return cv2.pyrDown(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)

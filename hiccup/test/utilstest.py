@@ -99,3 +99,29 @@ class UtilsTest(unittest.TestCase):
         ziggy = utils.zigzag(matrix)
         imat = utils.izigzag(ziggy, matrix.shape)
         self.assertTrue(np.array_equiv(matrix, imat))
+
+    def test_up_sample(self):
+        matrix = np.array([
+            [2, 2],
+            [2, 2],
+        ]).astype(np.uint8)
+        out = utils.up_sample(matrix, factor=2)
+        self.assertTrue(np.array_equiv(out, np.array([
+            [2, 2, 2, 2],
+            [2, 2, 2, 2],
+            [2, 2, 2, 2],
+            [2, 2, 2, 2],
+        ]).astype(np.uint8)))
+
+    def test_down_sample(self):
+        matrix = np.array([
+            [2, 2, 2, 2],
+            [2, 2, 2, 2],
+            [2, 2, 2, 2],
+            [2, 2, 2, 2],
+        ]).astype(np.uint8)
+        out = utils.down_sample(matrix, factor=2)
+        self.assertTrue(np.array_equiv(out, np.array([
+            [2, 2],
+            [2, 2],
+        ]).astype(np.uint8)))
