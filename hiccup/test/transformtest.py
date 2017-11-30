@@ -1,9 +1,10 @@
 import unittest
-import numpy as np
+import functools
 
 from hiccup.test.testhelper import *
 import hiccup.transform as trans
 import hiccup.quantization as qnt
+
 
 class TransformTest(unittest.TestCase):
     def test_padding(self):
@@ -127,12 +128,24 @@ class TransformTest(unittest.TestCase):
             [2, 2],
         ]).astype(np.uint8)))
 
-    def test_dct_null(self):
-        img = np.zeros((120, 80)).astype(np.uint8)
+    def test_dct_middle(self):
+        img = np.full((120, 80), 128).astype(np.uint8)
         out = trans.dct_channel(img, qnt.QTables.JPEG_CHROMINANCE)
-        self.assertTrue(np.sum(out) > 0)
+        self.assertTrue(np.sum(out) < 1e-10)
 
     def test_dct_ones(self):
         img = np.ones((120, 80)).astype(np.uint8)
         out = trans.dct_channel(img, qnt.QTables.JPEG_LUMINANCE)
         self.assertTrue(np.sum(out) > 0)
+
+    def test_dct_null(self):
+        img = np.zeros((120, 80)).astype(np.uint8)
+        out = trans.dct_channel(img, qnt.QTables.JPEG_LUMINANCE)
+        self.assertTrue(np.sum(out) < 1e-10)
+
+    def test_wavelet_levels(self):
+        mat = np.zeros((50, 50))
+        out = trans.wavelet_split_resolutions(mat, trans.Wavelet.DAUBECHIE, levels=2)
+        [self.assertEqual((13, 13), out[i].shape) for i in range(4)]
+        [self.assertEqual((25, 25), out[i].shape) for i in range(4, len(out))]
+        self.assertEqual(0, functools.reduce(lambda x, y: x + np.sum(y), out, 0))

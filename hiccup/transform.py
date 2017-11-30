@@ -1,10 +1,11 @@
 from typing import Tuple
-
+import enum
 import functools
 import numpy as np
 import cv2
 import scipy
 import scipy.fftpack
+import pywt
 
 import hiccup.quantization as qz
 
@@ -164,8 +165,7 @@ def dct_channel(channel: np.ndarray, quantization_table: qz.QTables, block_size=
     """
     Apply the Discrete Cosine transform on a channel of our image to later be encoded
     """
-
-    offset = channel.astype(np.int8) - 128
+    offset = channel.astype(np.int64) - 128
 
     blocks = split_matrix(offset, block_size)
     transformed_blocks = [dct2(block) for block in blocks]
@@ -173,3 +173,20 @@ def dct_channel(channel: np.ndarray, quantization_table: qz.QTables, block_size=
     quantized = np.array(qnt_blocks)
     result = merge_blocks(quantized, channel.shape).astype(channel.dtype)
     return result
+
+
+class Wavelet(enum.Enum):
+    DAUBECHIE = "db1"
+
+
+def wavelet_split_resolutions(channel: np.ndarray, wavelet: Wavelet, levels=3):
+    """
+    Simple wrapper to also flatten the array for convenience
+    """
+    cascade = pywt.wavedec2(channel, wavelet.value, level=levels)
+    cascade[0] = [cascade[0]]
+    return functools.reduce(lambda x, y: x + list(y), cascade, [])
+
+
+def wavelet_merge_resolutions(pyramid, wavelet: Wavelet):
+    pass
