@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 import enum
 import functools
 import numpy as np
@@ -7,6 +7,7 @@ import scipy
 import scipy.fftpack
 import pywt
 
+import hiccup.utils as utils
 import hiccup.quantization as qz
 
 """
@@ -188,5 +189,10 @@ def wavelet_split_resolutions(channel: np.ndarray, wavelet: Wavelet, levels=3):
     return functools.reduce(lambda x, y: x + list(y), cascade, [])
 
 
-def wavelet_merge_resolutions(pyramid, wavelet: Wavelet):
-    pass
+def wavelet_merge_resolutions(pyramid: List[np.ndarray], wavelet: Wavelet):
+    """
+    Since hombln just had to unravel the output of .wavedec2(), I need to reconstruct here!
+    """
+    tuples = utils.group_tuples(pyramid[1:], 3)
+    coeffs = [pyramid[0]] + tuples
+    return pywt.waverec2(coeffs, wavelet.value)
