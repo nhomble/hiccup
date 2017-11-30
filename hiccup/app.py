@@ -2,6 +2,10 @@ from tkinter import Button, OptionMenu, StringVar
 from tkinter.filedialog import askopenfilename, askdirectory
 import hiccup.run as run
 
+"""
+Any crap UI stuff I build for belch
+"""
+
 
 class BelchUI:
     def __init__(self, master):

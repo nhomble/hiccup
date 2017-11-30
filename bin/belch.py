@@ -2,7 +2,7 @@ import argparse
 from tkinter import Tk
 
 import hiccup.run as run
-from hiccup.ui.app import BelchUI
+from hiccup.app import BelchUI
 
 """
 Provide a simple GUI and command line tool to perform compressing and decompressing of images

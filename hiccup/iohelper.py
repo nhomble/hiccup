@@ -1,5 +1,8 @@
 import rawpy
 
+"""
+IO ickiness
+"""
 
 def open_raw_img(path):
     """

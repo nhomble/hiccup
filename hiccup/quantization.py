@@ -1,5 +1,9 @@
 import numpy as np
 
+"""
+Handle quantization of the matrices
+"""
+
 table = {
     # taken from wikipedia: https://en.wikipedia.org/wiki/Quantization_(image_processing)
     "common": np.array([
@@ -15,3 +19,13 @@ table = {
 }
 
 all_tables = set(table.keys())
+
+
+def dead_quantize(block: np.ndarray, option="common"):
+    """
+    With an 8x8 block, perform dead quantization with a certain table
+    """
+    t = table[option]
+    dividend = np.divide(block, t)
+    quantized = np.round(dividend)
+    return quantized

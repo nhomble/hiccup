@@ -1,6 +1,6 @@
 import unittest
 
-import hiccup.transform.quantization as qnt
+import hiccup.quantization as qnt
 
 
 class QuantizationTest(unittest.TestCase):

@@ -1,12 +1,12 @@
 import numpy as np
 from typing import List
 
+"""
+Wrap the representation of a HIC image to make it easier to write/retrieve from byte stream
+"""
+
 
 class HicImage:
-    """
-    Represents a HIC image which has dimensions and a compression style
-    """
-
     def __init__(self, rows: int, columns: int, style: str, transform_params: List[str], payload: np.ndarray):
         self._rows = rows
         self._columns = columns
