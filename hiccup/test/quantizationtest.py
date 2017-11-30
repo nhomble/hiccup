@@ -22,3 +22,11 @@ class QuantizationTest(unittest.TestCase):
         q = qnt.dead_quantize(mat, qnt.QTables.JPEG_LUMINANCE)
         self.assertEqual(q[0][0], 1)
         self.assertEqual(np.sum(q), 1)
+
+    def test_quality_threshold(self):
+        i = [
+            np.array(range(50)),
+            np.array(range(50, 100))
+        ]
+        out = qnt.quality_threshold(i, q_factor=.05)
+        self.assertEqual(out, 94)

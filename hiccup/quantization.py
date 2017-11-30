@@ -1,4 +1,7 @@
 import enum
+from typing import List
+import functools
+
 import numpy as np
 
 """
@@ -47,3 +50,15 @@ def dead_quantize(block: np.ndarray, option: QTables):
     dividend = np.divide(block, t)
     quantized = np.round(dividend)
     return quantized
+
+
+def quality_threshold(imgs: List[np.ndarray], q_factor=.05):
+    """
+    For wavelet compression, we won't rely on magical tables for quantization, we'll just pick how many coefficients we
+    to keep by thresholding a certain percentage as suggested in the literature.
+    """
+    vals = functools.reduce(lambda x, y: x + list(y), imgs, [])
+    s = list(sorted(vals))
+    keep_up_too = int(np.ceil(len(vals) * q_factor))
+    thresh_index = len(vals) - keep_up_too - 1
+    return s[thresh_index]
