@@ -160,22 +160,17 @@ def down_sample(matrix: np.ndarray, factor=2):
     return cv2.pyrDown(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)
 
 
-def dct_channel(self, channel):
+def dct_channel(channel, block_size=8, quantization_table="common"):
+    """
+    Apply the Discrete Cosine transform on a channel of our image to later be encoded
+    """
+
     offset = channel.astype(np.int8) - 128
 
-    blocks = split_matrix(offset, self._block_size)
+    blocks = split_matrix(offset, block_size)
     transformed_blocks = [dct2(block) for block in blocks]
-    table = qz.table[self._quantization_table]
+    table = qz.table[quantization_table]
     dividend = np.divide(transformed_blocks, table)
     quantized = np.round(dividend)
     result = merge_blocks(quantized, channel.shape).astype(channel.dtype)
     return result
-
-
-def jpeg_compression(self, rgb_img: np.ndarray):
-    yrcb = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2YCrCb)
-    splits = cv2.split(yrcb)
-
-    splits[0] = self.dct_compress(splits[0])  # 0 is the luminosity
-    compressed_img = cv2.merge(splits)
-    return compressed_img

@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 
+from hiccup.test.testhelper import *
 import hiccup.transform as trans
 
 
@@ -125,3 +126,13 @@ class TransformTest(unittest.TestCase):
             [2, 2],
             [2, 2],
         ]).astype(np.uint8)))
+
+    def test_dct_null(self):
+        img = np.zeros((120, 80)).astype(np.uint8)
+        out = trans.dct_channel(img)
+        self.assertEqual(0, np.sum(out))
+
+    def test_dct_ones(self):
+        img = np.ones((120, 80)).astype(np.uint8)
+        out = trans.dct_channel(img)
+        self.assertTrue(np.sum(out) > 0)
