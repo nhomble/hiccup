@@ -70,7 +70,7 @@ def jpeg_category(val: int, coeff: model.Coefficient):
     raise RuntimeError("You must have a category for value: " + str(val))
 
 
-def differential_coding(blocks: List[np.ndarray]):
+def differential_coding(blocks: np.ndarray):
     """
     Produce differential coding for the DC coefficients
     """
@@ -105,9 +105,8 @@ def run_length_coding(arr: np.ndarray):
     return [dict(d, bits=utils.num_bits_for_int(d["value"])) for d in rl]
 
 
-def jpeg_encode(blocks: List[np.ndarray]):
+def jpeg_encode(luminance: np.ndarray, chrominances: List[np.ndarray]):
     """
     Do the standard jpeg encoding
     """
-    dc_code = differential_coding(blocks)
-
+    dc_code = differential_coding(luminance)
