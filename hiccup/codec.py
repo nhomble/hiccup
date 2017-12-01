@@ -70,7 +70,7 @@ def jpeg_category(val: int, coeff: model.Coefficient):
     raise RuntimeError("You must have a category for value: " + str(val))
 
 
-def differential_coding(blocks: np.ndarray):
+def differential_coding(blocks: List[np.ndarray]):
     """
     Produce differential coding for the DC coefficients
     """
@@ -109,4 +109,5 @@ def jpeg_encode(blocks: List[np.ndarray]):
     """
     Do the standard jpeg encoding
     """
-    pass
+    dc_code = differential_coding(blocks)
+
