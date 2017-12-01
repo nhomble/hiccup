@@ -1,4 +1,4 @@
-import math
+import functools
 import cv2
 
 """
@@ -50,3 +50,18 @@ def differences(arr):
             ret.append(dc - arr[i])
             i += 1
     return ret
+
+
+def frequency_table(vals):
+    """
+    Quick frequency table for Huffman
+    """
+
+    def reduce(dic, ele):
+        if ele in dic:
+            dic[ele] += 1
+        else:
+            dic[ele] = 1
+        return dic
+
+    return functools.reduce(reduce, vals, {})

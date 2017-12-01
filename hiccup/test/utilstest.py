@@ -30,3 +30,9 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(utils.differences(arr), [
             1, 4, 7, -12
         ])
+
+    def test_frequency(self):
+        vals = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
+        table = utils.frequency_table(vals)
+        for v in vals:
+            self.assertEqual(v, table[v])
