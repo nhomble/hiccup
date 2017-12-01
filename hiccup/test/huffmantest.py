@@ -11,11 +11,17 @@ class HuffmanTest(unittest.TestCase):
         self.assertEqual(tree.root.frequency, 5)
         self.assertTrue(tree.root.is_leaf)
 
+        self.assertEqual(len(tree.leaves), 1)
+        self.assertEqual(tree.leaves[0], tree.root)
+
     def test_2_nodes(self):
         data = [0, 0, 0, 1]
         tree = huffman.HuffmanTree.construct_from_data(data)
         self.assertEqual(tree.root.frequency, 4)
         self.assertFalse(tree.root.is_leaf)
+        self.assertEqual(len(tree.leaves), 2)
+        self.assertTrue(tree.root.left in tree.leaves)
+        self.assertTrue(tree.root.right in tree.leaves)
 
         self.assertEqual(tree.root.left.frequency, 1)
         self.assertEqual(tree.root.left.value, 1)
@@ -30,6 +36,9 @@ class HuffmanTest(unittest.TestCase):
         tree = huffman.HuffmanTree.construct_from_data(data, key_func=lambda t: t[0])
         self.assertEqual(tree.root.frequency, 3)
         self.assertFalse(tree.root.is_leaf)
+        self.assertEqual(len(tree.leaves), 2)
+        self.assertTrue(tree.root.left in tree.leaves)
+        self.assertTrue(tree.root.right in tree.leaves)
 
         self.assertEqual(tree.root.left.frequency, 1)
         self.assertEqual(tree.root.left.value, "A")

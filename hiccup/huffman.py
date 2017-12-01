@@ -14,18 +14,17 @@ class HuffmanTree:
         Public constructor from data
         """
         groups = utils.group_by(data, key_func=key_func)
-        root = cls._construct(groups)
-        return cls(root)
+        root, leaves = cls._construct(groups)
+        return cls(root, leaves)
 
     @classmethod
     def _construct(cls, groups):
         """
         From the groups, construct the Huffman tree and return root for reference
         """
-        node_heap = [cls.Node.leaf(t[0], len(t[1])) for t in groups.items()]
+        leaves = [cls.Node.leaf(t[0], len(t[1])) for t in groups.items()]
+        node_heap = list(leaves)
         heapq.heapify(node_heap)
-        if len(node_heap) == 1:
-            return heapq.heappop(node_heap)
         while len(node_heap) > 1:
             l = heapq.heappop(node_heap)
             r = heapq.heappop(node_heap)
@@ -34,39 +33,38 @@ class HuffmanTree:
 
         root = heapq.heappop(node_heap)
 
-        return root
+        return root, leaves
 
-    def __init__(self, root):
+    def __init__(self, root, leaves):
         self.root = root
+        self.leaves = leaves
 
     class Node:
         GROUND = None
 
         @classmethod
         def combine(cls, l, r):
-            return cls(l, r, None, l.frequency + r.frequency)
+            return cls(l, r, None, l.frequency + r.frequency) \
+                .inherit(l) \
+                .inherit(r)
 
         @classmethod
         def leaf(cls, value, frequency):
             return cls(cls.GROUND, cls.GROUND, value, frequency)
 
         def __init__(self, left, right, value, frequency):
+            self.parent = None
             self.left = left
             self.right = right
             self.value = value
             self.frequency = frequency
 
-        def root_frequency(self):
+        def inherit(self, child):
             """
-            Get the total frequency under root
+            Point the child back to the parent for ease in encoding
             """
-            l = 0
-            if not self.left is self.GROUND:
-                l = self.left.root_frequency()
-            r = 0
-            if not self.right is self.GROUND:
-                r = self.right.root_frequency()
-            return self.frequency + l + r
+            child.parent = self
+            return self
 
         @property
         def is_leaf(self):
