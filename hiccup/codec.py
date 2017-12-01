@@ -1,4 +1,6 @@
 import functools
+from typing import List
+
 import numpy as np
 
 import hiccup.model as model
@@ -73,15 +75,7 @@ def differential_coding(blocks: np.ndarray):
     Produce differential coding for the DC coefficients
     """
     dc_comps = [transform.dc_component(b) for b in blocks]
-    ret = []
-    i = 0
-    for dc in dc_comps:  # ugh
-        if len(ret) == 0:
-            ret.append(dc)
-        else:
-            ret.append(dc - dc_comps[i])
-            i += 1
-    return ret
+    return utils.differences(dc_comps)
 
 
 def run_length_coding(arr: np.ndarray):
@@ -90,6 +84,7 @@ def run_length_coding(arr: np.ndarray):
 
     TODO: too long
     """
+
     def reduction(agg, next):
         if next == 0:
             agg[-1]["zeros"] += 1
@@ -110,9 +105,8 @@ def run_length_coding(arr: np.ndarray):
     return [dict(d, bits=utils.num_bits_for_int(d["value"])) for d in rl]
 
 
-def encode(array: np.ndarray):
-    pass
-
-
-def decode(array: np.ndarray):
+def jpeg_encode(blocks: List[np.ndarray]):
+    """
+    Do the standard jpeg encoding
+    """
     pass

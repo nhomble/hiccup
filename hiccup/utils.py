@@ -35,3 +35,18 @@ def num_bits_for_int(n: int):
         n >>= 1
         bits += 1
     return bits
+
+
+def differences(arr):
+    """
+    Compute differences between elements
+    """
+    ret = []
+    i = 0
+    for dc in arr:  # ugh
+        if len(ret) == 0:
+            ret.append(dc)
+        else:
+            ret.append(dc - arr[i])
+            i += 1
+    return ret

@@ -24,3 +24,9 @@ class UtilsTest(unittest.TestCase):
         for case in cases:
             self.assertEqual(utils.num_bits_for_int(case[0]), case[1],
                              msg="utils.num_bits_for_int(%d) == %d" % (case[0], case[1]))
+
+    def test_differences(self):
+        arr = [1, 5, 12, 0]
+        self.assertEqual(utils.differences(arr), [
+            1, 4, 7, -12
+        ])
