@@ -9,11 +9,11 @@ While we use the defaults given by the specs for encoding, we need to realize a 
 
 class HuffmanTree:
     @classmethod
-    def construct_from_data(cls, data, key_func=utils.identity, value_func=utils.identity):
+    def construct_from_data(cls, data, key_func=utils.identity):
         """
         Public constructor from data
         """
-        groups = utils.group_by(data, key_func=key_func, value_func=value_func)
+        groups = utils.group_by(data, key_func=key_func)
         root = cls._construct(groups)
         return cls(root)
 
