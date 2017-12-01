@@ -42,3 +42,8 @@ class UtilsTest(unittest.TestCase):
         table = utils.group_by(vals, lambda t: t[0], lambda t: t[1])
         self.assertEqual(table["A"], [1, 2])
         self.assertEqual(table["B"], [1])
+
+    def test_first(self):
+        arr = [1, 2, 3, 4]
+        self.assertEqual(utils.first(arr, lambda x: x > 1), 2)
+        self.assertRaises(RuntimeError,utils.first, arr, lambda x: x < 0)

@@ -73,3 +73,13 @@ def group_by(data, key_func=identity, value_func=identity):
         return dic
 
     return functools.reduce(reduce, data, {})
+
+
+def first(l: iter, predicate):
+    """
+    Get first element to satisfy predicate
+    """
+    for ele in l:
+        if predicate(ele):
+            return ele
+    raise RuntimeError("Found nothing to match predicate")
