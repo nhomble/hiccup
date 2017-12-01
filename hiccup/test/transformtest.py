@@ -174,3 +174,17 @@ class TransformTest(unittest.TestCase):
         self.assertEqual(2, len(out))
         self.assertEqual(np.sum(first), 0)
         self.assertEqual(np.sum(second), sum(range(94, 100)))
+
+    def test_dc_component(self):
+        matrix = np.array([
+            [1, 2],
+            [3, 4]
+        ])
+        self.assertEqual(1, trans.dc_component(matrix))
+
+    def test_ac_component(self):
+        matrix = np.array([
+            [1, 2],
+            [3, 4]
+        ])
+        self.assertTrue(np.array_equiv(np.array([3, 2, 4]), trans.ac_components(matrix)))

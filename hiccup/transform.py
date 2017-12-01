@@ -221,3 +221,17 @@ def threshold_channel_by_quality(parts: List[np.ndarray], q_factor=.05):
     """
     val = qz.quality_threshold_value(parts, q_factor)
     return [threshold(i, val) for i in parts]
+
+
+def dc_component(block: np.ndarray):
+    """
+    Return the DC component for a block (JPEG)
+    """
+    return block[0][0]
+
+
+def ac_components(block: np.ndarray):
+    """
+    Return the AC components for a block (JPEG)
+    """
+    return zigzag(block)[1:]
