@@ -84,14 +84,12 @@ def differential_coding(blocks: np.ndarray):
     return ret
 
 
-def run_length_coding(matrix: np.ndarray):
+def run_length_coding(arr: np.ndarray):
     """
     Come up with the run length encoding for a matrix
 
     TODO: too long
     """
-    zigzag = transform.zigzag(matrix)
-
     def reduction(agg, next):
         if next == 0:
             agg[-1]["zeros"] += 1
@@ -103,7 +101,7 @@ def run_length_coding(matrix: np.ndarray):
         agg.append({"zeros": 0})
         return agg
 
-    rl = functools.reduce(reduction, zigzag, [{"zeros": 0}])
+    rl = functools.reduce(reduction, arr, [{"zeros": 0}])
 
     # If the last element has value then it was 0! That is a special tuple, (0,0)
     if "value" not in rl[-1]:
