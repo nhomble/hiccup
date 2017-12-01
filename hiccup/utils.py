@@ -52,16 +52,24 @@ def differences(arr):
     return ret
 
 
-def frequency_table(vals):
+def identity(x):
+    """
+    Identity function
+    """
+    return x
+
+
+def group_by(data, key_func=identity, value_func=identity):
     """
     Quick frequency table for Huffman
     """
 
     def reduce(dic, ele):
-        if ele in dic:
-            dic[ele] += 1
+        k = key_func(ele)
+        if k in dic:
+            dic[k].append(value_func(ele))
         else:
-            dic[ele] = 1
+            dic[k] = [value_func(ele)]
         return dic
 
-    return functools.reduce(reduce, vals, {})
+    return functools.reduce(reduce, data, {})

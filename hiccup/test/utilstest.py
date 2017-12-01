@@ -31,8 +31,14 @@ class UtilsTest(unittest.TestCase):
             1, 4, 7, -12
         ])
 
-    def test_frequency(self):
+    def test_group_by(self):
         vals = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
-        table = utils.frequency_table(vals)
-        for v in vals:
-            self.assertEqual(v, table[v])
+        table = utils.group_by(vals)
+        for i in range(1, 5):
+            self.assertEqual(table[i], [i] * i)
+
+    def test_group_by_complex(self):
+        vals = [("A", 1), ("B", 1), ("A", 2)]
+        table = utils.group_by(vals, lambda t: t[0], lambda t: t[1])
+        self.assertEqual(table["A"], [1, 2])
+        self.assertEqual(table["B"], [1])
