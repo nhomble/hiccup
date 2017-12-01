@@ -9,3 +9,18 @@ class UtilsTest(unittest.TestCase):
 
     def test_bad_size_grouping(self):
         self.assertRaises(AssertionError, utils.group_tuples, [1, 2, 3], 2)
+
+    def test_bit_test(self):
+        cases = [
+            [0, 0],
+            [1, 1],
+            [2, 2],
+            [3, 2],
+            [4, 3],
+            [100, 7],
+            [-60, 6],
+            [-1, 1]
+        ]
+        for case in cases:
+            self.assertEqual(utils.num_bits_for_int(case[0]), case[1],
+                             msg="utils.num_bits_for_int(%d) == %d" % (case[0], case[1]))

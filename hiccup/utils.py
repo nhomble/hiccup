@@ -1,3 +1,4 @@
+import math
 import cv2
 
 """
@@ -22,3 +23,15 @@ def group_tuples(l, n):
         v = l[i:i + n]
         ret.append(tuple(v))
     return ret
+
+
+def num_bits_for_int(n: int):
+    """
+    Calculate the number of bits required to represent integer n
+    """
+    n = abs(n)
+    bits = 0
+    while n > 0:
+        n >>= 1
+        bits += 1
+    return bits
