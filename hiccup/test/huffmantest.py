@@ -4,15 +4,11 @@ import hiccup.huffman as huffman
 
 
 class HuffmanTest(unittest.TestCase):
-    def test_singleton(self):
+    def test_singleton_encoding(self):
         data = [0, 0, 0, 0, 0]
         tree = huffman.HuffmanTree.construct_from_data(data)
-        self.assertEqual(tree.root.value, 0)
-        self.assertEqual(tree.root.frequency, 5)
-        self.assertTrue(tree.root.is_leaf)
-
         self.assertEqual(len(tree.leaves), 1)
-        self.assertEqual(tree.leaves[0], tree.root)
+        self.assertEqual(tree.encoding(), "11111")
 
     def test_2_nodes(self):
         data = [0, 0, 0, 1]
@@ -47,3 +43,9 @@ class HuffmanTest(unittest.TestCase):
         self.assertEqual(tree.root.right.frequency, 2)
         self.assertEqual(tree.root.right.value, "B")
         self.assertTrue(tree.root.right.is_leaf)
+
+    def test_encode(self):
+        data = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
+        tree = huffman.HuffmanTree.construct_from_data(data)
+        out = tree.encoding()
+        self.assertEqual(out, "001" + ("000" * 2) + ("01" * 3) + ("1" * 4))
