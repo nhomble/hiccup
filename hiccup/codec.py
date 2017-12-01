@@ -72,7 +72,7 @@ def differential_coding(blocks: np.ndarray):
     """
     Produce differential coding for the DC coefficients
     """
-    dc_comps = [b[0][0] for b in blocks]
+    dc_comps = [transform.dc_component(b) for b in blocks]
     ret = []
     i = 0
     for dc in dc_comps:  # ugh
