@@ -1,3 +1,4 @@
+import random
 import unittest
 import hiccup.utils as utils
 
@@ -53,3 +54,15 @@ class UtilsTest(unittest.TestCase):
             [1, 2],
             [3, 4]
         ]), [1, 2, 3, 4])
+
+    def test_invert_differences(self):
+        diffs = [1, 1, 1, 1]
+        self.assertEqual(utils.invert_differences(diffs), [
+            1, 2, 3, 4
+        ])
+
+    def test_differences_random(self):
+        arr = [random.randint(0, 10) for i in range(100)]
+        diffs = utils.differences(arr)
+        invert = utils.invert_differences(diffs)
+        self.assertEqual(arr, invert)

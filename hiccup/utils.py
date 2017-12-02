@@ -1,4 +1,6 @@
 import functools
+from typing import List
+
 import cv2
 
 """
@@ -37,7 +39,7 @@ def num_bits_for_int(n: int):
     return bits
 
 
-def differences(arr):
+def differences(arr: List[int]):
     """
     Compute differences between elements
     """
@@ -49,6 +51,16 @@ def differences(arr):
         else:
             ret.append(dc - arr[i])
             i += 1
+    return ret
+
+
+def invert_differences(arr: List[int]):
+    """
+    Invert differences
+    """
+    ret = [arr[0]]
+    for diff in arr[1:]:
+        ret.append(ret[-1] + diff)
     return ret
 
 
@@ -90,3 +102,9 @@ def flatten(l: list):
     Simple flatten for my use cases
     """
     return functools.reduce(lambda x, y: x + y, l)
+
+
+def lazy_bitstring(l: list):
+    """
+
+    """
