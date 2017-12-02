@@ -124,3 +124,9 @@ def img_as_list(img: np.ndarray):
 
 def size(shape: tuple):
     return shape[0] * shape[1]
+
+
+def dict_map(d, f):
+    items = d.items()
+    items = [(t[0], f(*t)) for t in items]
+    return dict(items)

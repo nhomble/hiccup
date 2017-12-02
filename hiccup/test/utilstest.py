@@ -76,3 +76,14 @@ class UtilsTest(unittest.TestCase):
         ])
         out = utils.img_as_list(img)
         self.assertEqual(out, [1, 2, 3, 4])
+
+    def test_dict_map(self):
+        d = {
+            "a": 1,
+            "b": 2
+        }
+        out = utils.dict_map(d, lambda k, v: k + str(v))
+        self.assertEqual(out, {
+            "a": "a1",
+            "b": "b2"
+        })
