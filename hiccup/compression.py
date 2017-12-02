@@ -37,7 +37,7 @@ def jpeg_decompression(hic: hic.HicImage) -> np.ndarray:
     pass
 
 
-def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
+def rgb_wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
 
@@ -51,10 +51,15 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
         offset = np.subtract(v.astype(np.int64), np.power(2, 8))
         transformed = transform.wavelet_split_resolutions(offset, settings.WAVELET, settings.WAVELET_NUM_LEVELS)
         subbands = transform.subband_view(transformed)
-        quantized = qnt.subband_quantize(subbands, multiplier=settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER)
-        r_transformed = transform.linearize_subband(quantized)
+        if settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER != 0:
+            subbands = qnt.subband_quantize(subbands, multiplier=settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER)
+        r_transformed = transform.linearize_subband(subbands)
         thresholded = transform.threshold_channel_by_quality(r_transformed, q_factor=settings.WAVELET_QUALITY_FACTOR)
-        return thresholded
+
+        if settings.WAVELET_THRESHOLD != 0:
+            thresholded = [transform.threshold(part, settings.WAVELET_THRESHOLD) for part in thresholded]
+        rounded = [qnt.round_quantize(t) for t in thresholded]
+        return rounded
 
     channels = utils.dict_map(channels, channel_func)
 
@@ -77,7 +82,11 @@ def wavelet_decompression(hic: hic.HicImage) -> np.ndarray:
     }
 
     def channel_func(k, v):
-        merged = transform.wavelet_merge_resolutions(v, settings.WAVELET)
+        subbands = transform.subband_view(v)
+        if settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER != 0:
+            subbands = qnt.subband_invert_quantize(subbands, settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER)
+        li = transform.linearize_subband(subbands)
+        merged = transform.wavelet_merge_resolutions(li, settings.WAVELET)
         offset = np.add(merged, np.power(2, 8)).astype(np.uint8)
         return offset
 

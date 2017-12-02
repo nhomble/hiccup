@@ -130,3 +130,7 @@ def dict_map(d, f):
     items = d.items()
     items = [(t[0], f(*t)) for t in items]
     return dict(items)
+
+
+def is_gray(img: np.ndarray):
+    return len(img.shape) == 2

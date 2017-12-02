@@ -59,7 +59,16 @@ def subband_quantize(subbands, multiplier=1):
     subbands[0] = round_quantize(subbands[0])
     hfs = subbands[1:]
     for (i, band) in enumerate(hfs):
-        subbands[i + 1] = [deadzone_quantize(h, np.full(h.shape, multiplier * (i + 1), dtype=h.dtype)) for h in band]
+        subbands[i + 1] = [np.divide(h, multiplier * (i * i + 1)) for h in band]
+        subbands[i + 1] = round_quantize(subbands[i + 1])
+    return subbands
+
+
+def subband_invert_quantize(subbands, multiplier=1):
+    subbands[0] = round_quantize(subbands[0])
+    hfs = subbands[1:]
+    for (i, band) in enumerate(hfs):
+        subbands[i + 1] = [np.multiply(h, multiplier * (i * i + 1)) for h in band]
     return subbands
 
 

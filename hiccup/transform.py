@@ -207,7 +207,7 @@ def threshold(arr: np.ndarray, thresh, replace=0):
     """
 
     def _vec(ele):
-        if ele < thresh:
+        if abs(ele) < thresh:
             return replace
         else:
             return ele
