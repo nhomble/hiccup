@@ -15,8 +15,10 @@ class HuffmanTree:
         Public constructor from data
         """
         groups = utils.group_by(data, key_func=key_func)
+        utils.debug_msg("Groupby has found %d groups" % len(groups))
         leaves = [cls.Node.leaf(t[0], len(t[1])) for t in groups.items()]
         root, leaves = cls._construct(leaves)
+        utils.debug_msg("Finished constructing huffman")
         return cls(root, leaves, data, key_func)
 
     @classmethod

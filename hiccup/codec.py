@@ -7,6 +7,7 @@ import hiccup.model as model
 import hiccup.utils as utils
 import hiccup.transform as transform
 import hiccup.huffman as huffman
+import hiccup.hicimage as hic
 
 """
 Encoding/Decoding functionality aka
@@ -171,30 +172,34 @@ def wavelet_encode(luminance: list, chrominances: List[list]):
     zlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["zeros"])
     vlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["value"])
 
+    utils.debug_msg("Constructed luminance wavelet huffmans")
+
     rl_ch_1 = run_length_coding(lin(chrominances[0]))
     rl_ch_2 = run_length_coding(lin(chrominances[1]))
     rl_chr_data = rl_ch_1 + rl_ch_2
     zch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["zeros"])
     vch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["value"])
 
-    master_array = "\n".join([
+    utils.debug_msg("Constructed chrominance wavelet huffmans")
+
+    master_array = [
         # huffman tables
-        zlum_huff.encode_table(),
-        vlum_huff.encode_table(),
-        zch_huff.encode_table(),
-        vch_huff.encode_table(),
+        hic.PlainString(zlum_huff.encode_table()),
+        hic.PlainString(vlum_huff.encode_table()),
+        hic.PlainString(zch_huff.encode_table()),
+        hic.PlainString(vch_huff.encode_table()),
 
-        zlum_huff.encode_data(),
-        vlum_huff.encode_data(),
+        hic.BitString(zlum_huff.encode_data()),
+        hic.BitString(vlum_huff.encode_data()),
 
-        zch_huff.encode_data(data=rl_ch_1),
-        vch_huff.encode_data(data=rl_ch_1),
-        zch_huff.encode_data(data=rl_ch_2),
-        vch_huff.encode_data(data=rl_ch_2),
+        hic.BitString(zch_huff.encode_data(data=rl_ch_1)),
+        hic.BitString(vch_huff.encode_data(data=rl_ch_1)),
+        hic.BitString(zch_huff.encode_data(data=rl_ch_2)),
+        hic.BitString(vch_huff.encode_data(data=rl_ch_2)),
 
-        encode_shape(luminance[0].shape),  # encode the smallest shape
-        encode_shape(luminance[-1].shape)
-    ])
+        hic.PlainString(encode_shape(luminance[0].shape)),
+        hic.PlainString(encode_shape(luminance[-1].shape))
+    ]
     return master_array
 
 
@@ -227,8 +232,7 @@ def wavelet_decoded_length(min_shape, max_shape):
     return length
 
 
-def wavelet_decode(bit_string):
-    sections = bit_string.split("\n")
+def wavelet_decode(sections):
     zlum_huff = huffman.HuffmanTree.construct_from_coding(sections[0])
     vlum_huff = huffman.HuffmanTree.construct_from_coding(sections[1])
     zch_huff = huffman.HuffmanTree.construct_from_coding(sections[2])
