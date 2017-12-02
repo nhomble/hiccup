@@ -91,6 +91,8 @@ class HuffmanTree:
         bits = list(str)
 
         def reduce(agg, ele):
+            if agg[-1]["node"] == self.Node.GROUND:
+                agg.append({"node": self.root})
             if ele == "1":
                 next_ele = agg[-1]["node"].left
             elif ele == "0":
@@ -100,7 +102,7 @@ class HuffmanTree:
 
             if next_ele.is_leaf:
                 agg[-1]["value"] = next_ele.value
-                agg.append({"node": self.root})
+                agg[-1]["node"] = next_ele.left  # either is fine, it's just an indicator
                 return agg
             else:
                 agg[-1]["node"] = next_ele
@@ -110,7 +112,7 @@ class HuffmanTree:
             "node": self.root
         }])
         # chop last one because the reduction anticipates more values
-        return [v["value"] for v in values[:-1]]
+        return [v["value"] for v in values]
 
     class Node:
         GROUND = None
@@ -175,7 +177,7 @@ class HuffmanTree:
             return self.parent is self.ROOT
 
         def __eq__(self, other):
-            return self.id == other.id
+            return type(self) == type(other) and self.id == other.id
 
         def __lt__(self, other):
             return self.frequency < other.frequency
