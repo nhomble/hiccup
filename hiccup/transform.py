@@ -5,9 +5,9 @@ import numpy as np
 import cv2
 import scipy
 import scipy.fftpack
-from scipy import stats
 import pywt
 
+import hiccup.model as model
 import hiccup.utils as utils
 import hiccup.quantization as qz
 
@@ -163,7 +163,7 @@ def down_sample(matrix: np.ndarray, factor=2):
     return cv2.pyrDown(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)
 
 
-def dct_channel(channel: np.ndarray, quantization_table: qz.QTables, block_size=8):
+def dct_channel(channel: np.ndarray, quantization_table: model.QTables, block_size=8):
     """
     Apply the Discrete Cosine transform on a channel of our image to later be encoded
     """
@@ -219,7 +219,9 @@ def threshold_channel_by_quality(parts: List[np.ndarray], q_factor=.05):
     Actually apply the threshold after calculating the value. We take an array in parts since most likely
     our call is from the Wavelet compression where we have a series of images from the filter bank.
     """
-    val = qz.quality_threshold_value(parts, q_factor)
+    imgs = [utils.img_as_list(img) for img in parts]
+    vals = utils.flatten(imgs)
+    val = qz.quality_threshold_value(vals, q_factor)
     return [threshold(i, val) for i in parts]
 
 

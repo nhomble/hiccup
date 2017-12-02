@@ -3,7 +3,7 @@ import functools
 
 from hiccup.test.testhelper import *
 import hiccup.transform as trans
-import hiccup.quantization as qnt
+import hiccup.model as model
 
 
 class TransformTest(unittest.TestCase):
@@ -55,7 +55,7 @@ class TransformTest(unittest.TestCase):
         scalar = idct[0][0] / random[0][0]
         opposite = random * scalar * -1
         zeros = np.add(opposite, idct)
-        self.assertTrue(np.sum(zeros) < 1e-10)
+        self.assertTrue(np.sum(zeros) < 1e-9)
 
     def test_merge_blocks(self):
         blocks = np.array([
@@ -130,17 +130,17 @@ class TransformTest(unittest.TestCase):
 
     def test_dct_middle(self):
         img = np.full((120, 80), 128).astype(np.uint8)
-        out = trans.dct_channel(img, qnt.QTables.JPEG_CHROMINANCE)
+        out = trans.dct_channel(img, model.QTables.JPEG_CHROMINANCE)
         self.assertTrue(np.sum(out) < 1e-10)
 
     def test_dct_ones(self):
         img = np.ones((120, 80)).astype(np.uint8)
-        out = trans.dct_channel(img, qnt.QTables.JPEG_LUMINANCE)
+        out = trans.dct_channel(img, model.QTables.JPEG_LUMINANCE)
         self.assertTrue(np.sum(out) > 0)
 
     def test_dct_null(self):
         img = np.zeros((120, 80)).astype(np.uint8)
-        out = trans.dct_channel(img, qnt.QTables.JPEG_LUMINANCE)
+        out = trans.dct_channel(img, model.QTables.JPEG_LUMINANCE)
         self.assertTrue(np.sum(out) < 1e-10)
 
     def test_wavelet_levels(self):
@@ -164,8 +164,8 @@ class TransformTest(unittest.TestCase):
 
     def test_threshold_by_quality(self):
         i = [
-            np.array(range(50)),
-            np.array(range(50, 100))
+            np.array([range(50)]),
+            np.array([range(50, 100)])
         ]
         out = trans.threshold_channel_by_quality(i, q_factor=.05)
         first = out[0]

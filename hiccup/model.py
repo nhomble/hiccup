@@ -20,3 +20,8 @@ class Coefficient(enum.Enum):
     """
     DC = "DC"
     AC = "AC"
+
+
+class QTables(enum.Enum):
+    JPEG_LUMINANCE = "jpeg standard luminance"
+    JPEG_CHROMINANCE = "jpeg standard chrominance"
