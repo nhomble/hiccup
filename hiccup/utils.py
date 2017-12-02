@@ -3,6 +3,9 @@ from typing import List
 
 import cv2
 import numpy as np
+import datetime
+
+import hiccup.settings as settings
 
 """
 Random helpful utils
@@ -14,6 +17,11 @@ def debug_img(img):
         cv2.imshow("debugging image", img)
         if cv2.waitKey() == ord('q'):
             break
+
+
+def debug_msg(msg):
+    if settings.DEBUG:
+        print("%s %s" % (datetime.datetime.utcnow(), msg))
 
 
 def group_tuples(l, n):
@@ -32,7 +40,7 @@ def num_bits_for_int(n: int):
     """
     Calculate the number of bits required to represent integer n
     """
-    n = abs(n)
+    n = abs(int(n))
     bits = 0
     while n > 0:
         n >>= 1
