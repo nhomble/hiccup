@@ -6,6 +6,7 @@ import hiccup.transform as transform
 import hiccup.hicimage as hic
 import hiccup.quantization as qnt
 import hiccup.model as model
+import hiccup.utils as utils
 
 """
 Houses the entry functions to either compression algorithm
@@ -58,5 +59,5 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
 def wavelet_decompression(s) -> np.ndarray:
     (t_gray, t_color_1, t_color_2) = codec.wavelet_decode(s)
     channels = [transform.wavelet_merge_resolutions(m, model.Wavelet.DAUBECHIE) for m in [t_gray, t_color_1, t_color_2]]
-    yrcrcb = cv2.merge(channels).astype(np.float32)
+    yrcrcb = cv2.merge(channels).astype(np.uint8)
     return cv2.cvtColor(yrcrcb, cv2.COLOR_YCrCb2RGB)
