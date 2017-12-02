@@ -6,7 +6,7 @@ import hiccup.transform as transform
 import hiccup.hicimage as hic
 import hiccup.quantization as qnt
 import hiccup.model as model
-import hiccup.utils as utils
+import hiccup.settings as settings
 
 """
 Houses the entry functions to either compression algorithm
@@ -40,7 +40,7 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
     # Daubechie should be a setting
-    [t_gray, t_color_1, t_color_2] = [transform.wavelet_split_resolutions(c, model.Wavelet.DAUBECHIE) for c in
+    [t_gray, t_color_1, t_color_2] = [transform.wavelet_split_resolutions(c, settings.WAVELET) for c in
                                       [gray, color_1, color_2]]
 
     [t_gray, t_color_1, t_color_2] = [transform.linearize_subband(qnt.subband_quantize(transform.subband_view(b))) for b
@@ -58,6 +58,6 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
 
 def wavelet_decompression(s) -> np.ndarray:
     (t_gray, t_color_1, t_color_2) = codec.wavelet_decode(s)
-    channels = [transform.wavelet_merge_resolutions(m, model.Wavelet.DAUBECHIE) for m in [t_gray, t_color_1, t_color_2]]
+    channels = [transform.wavelet_merge_resolutions(m, settings.WAVELET) for m in [t_gray, t_color_1, t_color_2]]
     yrcrcb = cv2.merge(channels).astype(np.uint8)
     return cv2.cvtColor(yrcrcb, cv2.COLOR_YCrCb2RGB)
