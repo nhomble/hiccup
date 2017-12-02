@@ -1,5 +1,4 @@
 from typing import Tuple, List
-import enum
 import functools
 import numpy as np
 import cv2
@@ -217,7 +216,7 @@ def threshold(arr: np.ndarray, thresh, replace=0):
     return vector(arr)
 
 
-def threshold_channel_by_quality(parts: List[np.ndarray], q_factor=.05):
+def threshold_channel_by_quality(parts: List[np.ndarray], q_factor=1):
     """
     Actually apply the threshold after calculating the value. We take an array in parts since most likely
     our call is from the Wavelet compression where we have a series of images from the filter bank.
