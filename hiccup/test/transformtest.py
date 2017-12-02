@@ -188,3 +188,73 @@ class TransformTest(unittest.TestCase):
             [3, 4]
         ])
         self.assertTrue(np.array_equiv(np.array([3, 2, 4]), trans.ac_components(matrix)))
+
+    def test_subband_view(self):
+        l = [
+            np.array([
+                [1, 2],
+                [3, 4]
+            ]),
+            np.array([
+                [5, 6],
+                [7, 8]
+            ]),
+            np.array([
+                [9, 10],
+                [11, 12]
+            ]),
+            np.array([
+                [13, 14],
+                [15, 16]
+            ])
+        ]
+        out = trans.subband_view(l)
+        self.assertTrue(np.array_equiv(out[0], l[0]))
+        self.assertEquals(len(out), 2)
+
+        self.assertTrue(np.array_equiv(out[1][0], l[1]))
+        self.assertTrue(np.array_equiv(out[1][1], l[2]))
+        self.assertTrue(np.array_equiv(out[1][2], l[3]))
+
+    def test_linearize_subband(self):
+        subbands = [
+            np.array([
+                [1, 2],
+                [3, 4]
+            ]),
+            (
+                np.array([
+                    [5, 6],
+                    [7, 8]
+                ]),
+                np.array([
+                    [9, 10],
+                    [11, 12]
+                ]),
+                np.array([
+                    [13, 14],
+                    [15, 16]
+                ])
+            )
+        ]
+        out = trans.linearize_subband(subbands)
+        l = [
+            np.array([
+                [1, 2],
+                [3, 4]
+            ]),
+            np.array([
+                [5, 6],
+                [7, 8]
+            ]),
+            np.array([
+                [9, 10],
+                [11, 12]
+            ]),
+            np.array([
+                [13, 14],
+                [15, 16]
+            ])
+        ]
+        for (i, ele) in enumerate(l):
+            self.assertTrue(np.array_equiv(ele, out[i]))

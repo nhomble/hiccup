@@ -194,11 +194,17 @@ def wavelet_split_resolutions(channel: np.ndarray, wavelet: model.Wavelet, level
 
 
 def linearize_subband(subbands):
+    """
+    Unravel the subbands so I can do general transforms irrespective of the subbands
+    """
     subbands[0] = [subbands[0]]
     return functools.reduce(lambda x, y: x + list(y), subbands, [])
 
 
 def subband_view(pyramid: List[np.ndarray]):
+    """
+    Reconstruct a subband
+    """
     return [pyramid[0]] + utils.group_tuples(pyramid[1:], 3)
 
 
