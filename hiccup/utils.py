@@ -120,3 +120,7 @@ def img_as_list(img: np.ndarray):
     """
     rows = img.tolist()
     return flatten(rows)
+
+
+def size(shape: tuple):
+    return shape[0] * shape[1]

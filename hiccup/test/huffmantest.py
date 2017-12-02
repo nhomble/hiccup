@@ -2,6 +2,9 @@ import random
 import unittest
 
 import hiccup.huffman as huffman
+import hiccup.settings as settings
+
+settings.DEBUG = False
 
 
 class HuffmanTest(unittest.TestCase):

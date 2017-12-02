@@ -18,7 +18,7 @@ Encoding/Decoding functionality aka
 """
 
 # http://www.globalspec.com/reference/39556/203279/appendix-b-huffman-tables-for-the-dc-and-ac-coefficients-of-the-jpeg-baseline-encoder
-huffman = {
+jpeg_categories = {
     model.Compression.JPEG: {
         "DC_HUFFMAN_CODE": {
             model.Coefficient.DC: {
@@ -68,7 +68,7 @@ def jpeg_category(val: int, coeff: model.Coefficient):
 
     From Gonzalez and Wood
     """
-    for k, v in huffman[model.Compression.JPEG]["DC_HUFFMAN_CODE"][coeff].items():
+    for k, v in jpeg_categories[model.Compression.JPEG]["DC_HUFFMAN_CODE"][coeff].items():
         if v is not None and abs(val) in v:
             return k
     raise RuntimeError("You must have a category for value: " + str(val))
@@ -127,12 +127,141 @@ def run_length_coding(arr: np.ndarray, max_len=0xF):
     return [dict(d, bits=utils.num_bits_for_int(d["value"])) for d in rl]
 
 
+def decode_run_length(rles: list, length: int):
+    arr = utils.flatten([([0] * d["zeros"]) + [d["value"]] for d in rles])
+    fill = length - len(arr)
+    arr += ([0] * fill)
+    return arr
+
+
+def recover_run_length_coding(zeros, values):
+    tups = zip(zeros, values)
+    return [{"zeros": tup[0], "value": tup[1]} for tup in tups]
+
+
 def jpeg_rle(rle):
     """
     JPEG defines an encoding for the each run length code since the DCT coefficients are maxes at a certain range. The
     wavelet basis functions should also be within the
     """
     pass
+
+
+def encode_shape(shape):
+    return "%d.%d" % shape
+
+
+def decode_shape(s):
+    [x, y] = s.split(".")
+    return int(x), int(y)
+
+
+def wavelet_encode(luminance: list, chrominances: List[list]):
+    """
+    In brief reading of literature, Huffman coding is still considered for wavelet image compression.
+    """
+
+    def lin(L):
+        return utils.flatten([utils.img_as_list(i) for i in L])
+
+    full_lum_data = lin(luminance)
+    utils.debug_msg("Full wavelet luminance data length: %d" % len(full_lum_data))
+    utils.debug_msg("Full wavelet luminance data\n%s" % " ".join([str(i) for i in full_lum_data]))
+    rl_lum_data = run_length_coding(full_lum_data)
+    zlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["zeros"])
+    vlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["value"])
+
+    rl_ch_1 = run_length_coding(lin(chrominances[0]))
+    rl_ch_2 = run_length_coding(lin(chrominances[1]))
+    rl_chr_data = rl_ch_1 + rl_ch_2
+    zch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["zeros"])
+    vch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["value"])
+
+    master_array = "\n".join([
+        # huffman tables
+        zlum_huff.encode_table(),
+        vlum_huff.encode_table(),
+        zch_huff.encode_table(),
+        vch_huff.encode_table(),
+
+        zlum_huff.encode_data(),
+        vlum_huff.encode_data(),
+
+        zch_huff.encode_data(data=rl_ch_1),
+        vch_huff.encode_data(data=rl_ch_1),
+        zch_huff.encode_data(data=rl_ch_2),
+        vch_huff.encode_data(data=rl_ch_2),
+
+        encode_shape(luminance[0].shape),  # encode the smallest shape
+        encode_shape(luminance[-1].shape)
+    ])
+    return master_array
+
+
+def wavelet_decode_pull_subbands(data, shapes):
+    offset = utils.size(shapes[0])
+    subbands = [np.array(data[:offset]).reshape(shapes[0])]
+
+    for i in range(len(shapes)):
+        subbands.append(np.array(data[offset:offset + utils.size(shapes[i])]).reshape(shapes[i]))
+        offset += utils.size(shapes[i])
+
+        subbands.append(np.array(data[offset:offset + utils.size(shapes[i])]).reshape(shapes[i]))
+        offset += utils.size(shapes[i])
+
+        subbands.append(np.array(data[offset:offset + utils.size(shapes[i])]).reshape(shapes[i]))
+        offset += utils.size(shapes[i])
+    return subbands
+
+
+def wavelet_decoded_subbands_shapes(min_shape, max_shape):
+    levels = int(np.sqrt(max_shape[0] // min_shape[0]))
+    shapes = [(min_shape[0] * (np.power(2, i)), min_shape[1] * (np.power(2, i))) for i in range(0, levels + 1)]
+    return shapes
+
+
+def wavelet_decoded_length(min_shape, max_shape):
+    shapes = wavelet_decoded_subbands_shapes(min_shape, max_shape)
+    length = functools.reduce(lambda agg, s: agg + (3 * (s[0] * s[1])), shapes, 0)
+    length += (min_shape[0] * min_shape[1])
+    return length
+
+
+def wavelet_decode(bit_string):
+    sections = bit_string.split("\n")
+    zlum_huff = huffman.HuffmanTree.construct_from_coding(sections[0])
+    vlum_huff = huffman.HuffmanTree.construct_from_coding(sections[1])
+    zch_huff = huffman.HuffmanTree.construct_from_coding(sections[2])
+    vch_huff = huffman.HuffmanTree.construct_from_coding(sections[3])
+
+    zlum_data = zlum_huff.decode_data(sections[4])
+    vlum_data = vlum_huff.decode_data(sections[5])
+
+    zch1_data = zch_huff.decode_data(sections[6])
+    vch1_data = vch_huff.decode_data(sections[7])
+
+    zch2_data = zch_huff.decode_data(sections[8])
+    vch2_data = vch_huff.decode_data(sections[9])
+
+    min_shape = decode_shape(sections[10])
+    max_shape = decode_shape(sections[11])
+
+    length = wavelet_decoded_length(min_shape, max_shape)
+
+    lum_rle = recover_run_length_coding(zlum_data, vlum_data)
+    ch1_rle = recover_run_length_coding(zch1_data, vch1_data)
+    ch2_rle = recover_run_length_coding(zch2_data, vch2_data)
+
+    lum = decode_run_length(lum_rle, length)
+    ch1 = decode_run_length(ch1_rle, length)
+    ch2 = decode_run_length(ch2_rle, length)
+
+    utils.debug_msg("Recovered luminance from RLE\n%s" % " ".join([str(l) for l in lum]))
+
+    shapes = wavelet_decoded_subbands_shapes(min_shape, max_shape)
+    return wavelet_decode_pull_subbands(lum, shapes), \
+           wavelet_decode_pull_subbands(ch1, shapes), \
+           wavelet_decode_pull_subbands(ch2, shapes)
 
 
 def jpeg_encode(luminance: np.ndarray, chrominances: List[np.ndarray]):

@@ -39,20 +39,35 @@ table = {
 all_tables = set(table.keys())
 
 
-def dead_quantize(block: np.ndarray, option: model.QTables):
+def deadzone_quantize(block, div):
+    dividend = np.divide(block, div)
+    return round_quantize(dividend)
+
+
+def jpeg_quantize(block: np.ndarray, option: model.QTables):
     """
     With an 8x8 block, perform dead quantization with a certain table. Dead 'cause we are creating deadzones
     """
     t = table[option]
-    dividend = np.divide(block, t)
-    return round_quantize(dividend)
+    return deadzone_quantize(block, t)
+
+
+def subband_quantize(subbands, multiplier=1):
+    """
+    Uniformly dead zone
+    """
+    subbands[0] = round_quantize(subbands[0])
+    hfs = subbands[1:]
+    for (i, band) in enumerate(hfs):
+        subbands[i + 1] = [deadzone_quantize(h, np.full(h.shape, multiplier * (i + 1), dtype=h.dtype)) for h in band]
+    return subbands
 
 
 def round_quantize(block: np.ndarray):
-    return np.round(block)
+    return np.round(block).astype(np.int32)
 
 
-def quality_threshold_value(vals: list, q_factor=.05):
+def quality_threshold_value(vals: list, q_factor=1):
     """
     For wavelet compression, we won't rely on magical tables for quantization, we'll just pick how many coefficients we
     to keep by thresholding a certain percentage as suggested in the literature.

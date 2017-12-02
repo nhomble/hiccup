@@ -25,3 +25,7 @@ class Coefficient(enum.Enum):
 class QTables(enum.Enum):
     JPEG_LUMINANCE = "jpeg standard luminance"
     JPEG_CHROMINANCE = "jpeg standard chrominance"
+
+
+class Wavelet(enum.Enum):
+    DAUBECHIE = "db1"

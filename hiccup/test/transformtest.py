@@ -145,15 +145,15 @@ class TransformTest(unittest.TestCase):
 
     def test_wavelet_levels(self):
         mat = np.zeros((50, 50))
-        out = trans.wavelet_split_resolutions(mat, trans.Wavelet.DAUBECHIE, levels=2)
+        out = trans.wavelet_split_resolutions(mat, model.Wavelet.DAUBECHIE, levels=2)
         [self.assertEqual((13, 13), out[i].shape) for i in range(4)]
         [self.assertEqual((25, 25), out[i].shape) for i in range(4, len(out))]
         self.assertEqual(0, functools.reduce(lambda x, y: x + np.sum(y), out, 0))
 
     def test_wavelet_inverse(self):
         mat = np.random.randint(0, 255, (64, 64))
-        pyr = trans.wavelet_split_resolutions(mat, trans.Wavelet.DAUBECHIE, levels=3)
-        rec = trans.wavelet_merge_resolutions(pyr, trans.Wavelet.DAUBECHIE)
+        pyr = trans.wavelet_split_resolutions(mat, model.Wavelet.DAUBECHIE, levels=3)
+        rec = trans.wavelet_merge_resolutions(pyr, model.Wavelet.DAUBECHIE)
         diff = np.sum(np.subtract(mat, rec))
         self.assertTrue(diff < 1e-8)
 

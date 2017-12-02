@@ -171,31 +171,34 @@ def dct_channel(channel: np.ndarray, quantization_table: model.QTables, block_si
 
     blocks = split_matrix(offset, block_size)
     transformed_blocks = [dct2(block) for block in blocks]
-    qnt_blocks = [qz.dead_quantize(block, quantization_table) for block in transformed_blocks]
+    qnt_blocks = [qz.jpeg_quantize(block, quantization_table) for block in transformed_blocks]
     quantized = np.array(qnt_blocks)
     result = merge_blocks(quantized, channel.shape).astype(channel.dtype)
     return result
 
 
-class Wavelet(enum.Enum):
-    DAUBECHIE = "db1"
-
-
-def wavelet_split_resolutions(channel: np.ndarray, wavelet: Wavelet, levels=3):
+def wavelet_split_resolutions(channel: np.ndarray, wavelet: model.Wavelet, levels=3):
     """
     Simple wrapper to also flatten the array for convenience
     """
     cascade = pywt.wavedec2(channel, wavelet.value, level=levels)
-    cascade[0] = [cascade[0]]
-    return functools.reduce(lambda x, y: x + list(y), cascade, [])
+    return linearize_subband(cascade)
 
 
-def wavelet_merge_resolutions(pyramid: List[np.ndarray], wavelet: Wavelet):
+def linearize_subband(subbands):
+    subbands[0] = [subbands[0]]
+    return functools.reduce(lambda x, y: x + list(y), subbands, [])
+
+
+def subband_view(pyramid: List[np.ndarray]):
+    return [pyramid[0]] + utils.group_tuples(pyramid[1:], 3)
+
+
+def wavelet_merge_resolutions(pyramid: List[np.ndarray], wavelet: model.Wavelet):
     """
     Since hombln just had to unravel the output of .wavedec2(), I need to reconstruct here!
     """
-    tuples = utils.group_tuples(pyramid[1:], 3)
-    coeffs = [pyramid[0]] + tuples
+    coeffs = subband_view(pyramid)
     return pywt.waverec2(coeffs, wavelet.value)
 
 

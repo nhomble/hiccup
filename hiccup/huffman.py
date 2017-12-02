@@ -53,11 +53,37 @@ class HuffmanTree:
         self.data = data
         self.key_func = key_func
 
+        # speed things up
+        self._cache = {
+            self.get_leaf: {}
+        }
+
+    def blow_cache(self):
+        """
+        Control memory somewhat
+        """
+        self._cache = {
+            self.get_leaf: {}
+        }
+
+    def in_cache(self, k, v):
+        return v in self._cache[k]
+
+    def get_cache(self, k, v):
+        return self._cache[k][v]
+
+    def cache(self, k, v, to_cache):
+        self._cache[k][v] = to_cache
+
     def get_leaf(self, value):
         """
         Find our ending leaf from value that must exist by construction
         """
-        return utils.first(self.leaves, lambda l: l.value == value)
+        if self.in_cache(self.get_leaf, value):
+            return self.get_cache(self.get_leaf, value)
+        out = utils.first(self.leaves, lambda l: l.value == value)
+        self.cache(self.get_leaf, value, out)
+        return out
 
     def encode_data(self, data=None):
         """
@@ -79,7 +105,9 @@ class HuffmanTree:
             raise RuntimeError("Invalid state")
 
         paths = [self.get_leaf(self.key_func(d)).path() for d in data]
+        utils.debug_msg("Got %d paths" % len(paths))
         strs = [translate_path(path) for path in paths]
+        utils.debug_msg("Got the strs")
         return "".join(strs)
 
     def encode_table(self):
