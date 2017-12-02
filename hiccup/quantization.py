@@ -11,7 +11,6 @@ import hiccup.utils as utils
 Handle quantization of the matrices
 """
 
-
 table = {
     # taken from wikipedia: https://en.wikipedia.org/wiki/Quantization_(image_processing)
     # JPEG Standard, Annex K (from Bernd Girod)
@@ -46,8 +45,11 @@ def dead_quantize(block: np.ndarray, option: model.QTables):
     """
     t = table[option]
     dividend = np.divide(block, t)
-    quantized = np.round(dividend)
-    return quantized
+    return round_quantize(dividend)
+
+
+def round_quantize(block: np.ndarray):
+    return np.round(block)
 
 
 def quality_threshold_value(vals: list, q_factor=.05):
