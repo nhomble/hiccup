@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 
-import hiccup.codec as codec
 import hiccup.transform as transform
 import hiccup.hicimage as hic
 import hiccup.quantization as qnt
@@ -35,9 +34,6 @@ def jpeg_compression(rgb_image: np.ndarray) -> hic.HicImage:
 
     channels = utils.dict_map(channels, channel_fun)
     return channels
-    # encoding = codec.jpeg_encode(channels["lum"], [channels["cr"], channels["cb"]])
-    #
-    # return hic.HicImage.jpeg_image(encoding)
 
 
 def jpeg_decompression(d) -> np.ndarray:
@@ -57,7 +53,7 @@ def jpeg_decompression(d) -> np.ndarray:
     return cv2.cvtColor(y, cv2.COLOR_YCrCb2RGB)
 
 
-def rgb_wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
+def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
 
@@ -83,24 +79,10 @@ def rgb_wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
 
     channels = utils.dict_map(channels, channel_func)
 
-    encoding = codec.wavelet_encode(channels["lum"], [channels["cr"], channels["cb"]])
-
-    utils.debug_msg("The image is %d x %d x 3 which is %d pixels" % (
-        rgb_image.shape[0], rgb_image.shape[1], 3 * utils.size(rgb_image.shape)))
-
-    return hic.HicImage.wavelet_image(encoding)
+    return channels
 
 
-def wavelet_decompression(hic: hic.HicImage) -> np.ndarray:
-    hic.apply_settings()
-    payload = hic.payload()
-    (t_gray, t_color_1, t_color_2) = codec.wavelet_decode(payload)
-    channels = {
-        "lum": t_gray,
-        "cr": t_color_1,
-        "cb": t_color_2
-    }
-
+def wavelet_decompression(channels) -> np.ndarray:
     def channel_func(k, v):
         subbands = transform.subband_view(v)
         if settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER != 0:
