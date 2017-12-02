@@ -6,6 +6,7 @@ import numpy as np
 import hiccup.model as model
 import hiccup.utils as utils
 import hiccup.transform as transform
+import hiccup.huffman as huffman
 
 """
 Encoding/Decoding functionality aka
@@ -126,9 +127,55 @@ def run_length_coding(arr: np.ndarray, max_len=0xF):
     return [dict(d, bits=utils.num_bits_for_int(d["value"])) for d in rl]
 
 
+def jpeg_rle(rle):
+    """
+    JPEG defines an encoding for the each run length code since the DCT coefficients are maxes at a certain range. The
+    wavelet basis functions should also be within the
+    """
+    pass
+
+
 def jpeg_encode(luminance: np.ndarray, chrominances: List[np.ndarray]):
     """
-    Do the standard jpeg encoding
+    Generally follow JPEG encoding. Since for the wavelet work I am don't have some standard huffman tree to work with
+    I might as well be consistent between the two implementations and just encode the entire array with custom
+    Huffman trees. To attempt to be honest with the implementation though, I'll still treat the DC components
+    separately by doing the differences and again applying a custom Huffman. A mean feature of DCT on each block is the
+    meaning of the DC component.
     """
-    dc_code = differential_coding(luminance)
-    return None
+    dc_lum = differential_coding(luminance)
+    dc_chs = [differential_coding(m) for m in chrominances]
+
+    ac_lum = run_length_coding(transform.ac_components(luminance))
+    ac_chs = [run_length_coding(transform.ac_components(m)) for m in chrominances]
+
+    dc_lu_huffman = huffman.HuffmanTree.construct_from_data(dc_lum)
+    dc_ch_huffman = huffman.HuffmanTree.construct_from_data(utils.flatten(dc_chs))
+    ac_lu_huffman = huffman.HuffmanTree.construct_from_data(ac_lum, key_func=lambda rl: rl["zeros"])
+    ac_ch_huffman = huffman.HuffmanTree.construct_from_data(utils.flatten(ac_chs), key_func=lambda rl: rl["zeros"])
+
+    master_string = "\n".join([
+        # table data
+        dc_lu_huffman.encode_table(),
+        dc_ch_huffman.encode_table(),
+        ac_lu_huffman.encode_table(),
+        ac_ch_huffman.encode_table(),
+        # huffman encoding
+        dc_lu_huffman.encode_data(),
+        dc_ch_huffman.encode_data(chrominances[0]),
+        dc_ch_huffman.encode_data(chrominances[1]),
+        ac_lu_huffman.encode_data(),
+        ac_ch_huffman.encode_data(chrominances[0]),
+        ac_ch_huffman.encode_data(chrominances[1]),
+        # auxiliary
+        [s["size"] for s in ac_lum],
+        [s["value"] for s in ac_lum],
+
+        [s["size"] for s in ac_chs[0]],
+        [s["value"] for s in ac_chs[0]],
+
+        [s["size"] for s in ac_chs[1]],
+        [s["value"] for s in ac_chs[1]]
+
+    ])
+    return master_string
