@@ -55,6 +55,10 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     t_color_2 = [qnt.round_quantize(b) for b in t_color_2]
     encoding = codec.wavelet_encode(t_gray, [t_color_1, t_color_2])
 
+    utils.debug_msg("The encoded string is %d long" % len(encoding))
+    utils.debug_msg("The image is %d x %d which is %d pixels" % (
+        rgb_image.shape[0], rgb_image.shape[1], utils.size(rgb_image.shape)))
+
     return encoding
 
 
