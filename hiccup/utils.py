@@ -2,6 +2,7 @@ import functools
 from typing import List
 
 import cv2
+import numpy as np
 
 """
 Random helpful utils
@@ -97,14 +98,17 @@ def first(l: iter, predicate):
     raise RuntimeError("Found nothing to match predicate")
 
 
-def flatten(l: list):
+def flatten(l: iter):
     """
     Simple flatten for my use cases
     """
     return functools.reduce(lambda x, y: x + y, l)
 
 
-def lazy_bitstring(l: list):
+def img_as_list(img: np.ndarray):
     """
-
+    Don't care how, just flatten the ndarray into 1d-list. Helpful if I am doing image wide calcs that don't care about
+    positioning.
     """
+    rows = img.tolist()
+    return flatten(rows)

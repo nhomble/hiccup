@@ -2,6 +2,8 @@ import random
 import unittest
 import hiccup.utils as utils
 
+import numpy as np
+
 
 class UtilsTest(unittest.TestCase):
     def test_grouping(self):
@@ -66,3 +68,11 @@ class UtilsTest(unittest.TestCase):
         diffs = utils.differences(arr)
         invert = utils.invert_differences(diffs)
         self.assertEqual(arr, invert)
+
+    def test_img_as_list(self):
+        img = np.array([
+            [1, 2],
+            [3, 4]
+        ])
+        out = utils.img_as_list(img)
+        self.assertEqual(out, [1, 2, 3, 4])
