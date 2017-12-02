@@ -27,7 +27,7 @@ class QuantizationTest(unittest.TestCase):
     def test_quality_threshold(self):
         i = range(100)
         out = qnt.quality_threshold_value(list(i), q_factor=.05)
-        self.assertEqual(out, 94)
+        self.assertEqual(out, 95)
 
     def test_round_quantize(self):
         mat = np.array([
