@@ -53,6 +53,7 @@ class TransformTest(unittest.TestCase):
         dct = trans.dct2(random)
         idct = trans.idct2(dct)
         scalar = idct[0][0] / random[0][0]
+        self.assertTrue(abs(1 - scalar) < 1e-9)
         opposite = random * scalar * -1
         zeros = np.add(opposite, idct)
         self.assertTrue(np.sum(zeros) < 1e-9)
