@@ -1,4 +1,5 @@
 import heapq
+import functools
 
 import hiccup.utils as utils
 
@@ -14,16 +15,22 @@ class HuffmanTree:
         Public constructor from data
         """
         groups = utils.group_by(data, key_func=key_func)
-        root, leaves = cls._construct(groups)
+        leaves = [cls.Node.leaf(t[0], len(t[1])) for t in groups.items()]
+        root, leaves = cls._construct(leaves)
         return cls(root, leaves, data, key_func)
 
     @classmethod
-    def _construct(cls, groups):
+    def construct_from_coding(cls, coding):
+        segments = coding.split(" ")
+        leaves = [cls.Node.from_encoding(s) for s in segments]
+        root, leaves = cls._construct(leaves)
+        return cls(root, leaves, None, None)
+
+    @classmethod
+    def _construct(cls, leaves):
         """
         From the groups, construct the Huffman tree and return root for reference
         """
-        leaves = [cls.Node.leaf(t[0], len(t[1])) for t in groups.items()]
-
         # in the stupid case you just have 1 element repeated over and over
         if len(leaves) == 1:
             return cls.Node.singleton(leaves[0]), leaves
@@ -52,7 +59,7 @@ class HuffmanTree:
         """
         return utils.first(self.leaves, lambda l: l.value == value)
 
-    def encoding(self):
+    def encode_data(self):
         """
         Construct binary encoding with Huffman tree
         """
@@ -73,6 +80,38 @@ class HuffmanTree:
         strs = [translate_path(path) for path in paths]
         return "".join(strs)
 
+    def encode_table(self):
+        """
+        TODO encode this even better, although it probably shouldn't adjust the overall compression that much
+        """
+        s = [n.encoding for n in self.leaves]
+        return " ".join(s)
+
+    def decode_data(self, str):
+        bits = list(str)
+
+        def reduce(agg, ele):
+            if ele == "1":
+                next_ele = agg[-1]["node"].left
+            elif ele == "0":
+                next_ele = agg[-1]["node"].right
+            else:
+                raise RuntimeError("Illegal state")
+
+            if next_ele.is_leaf:
+                agg[-1]["value"] = next_ele.value
+                agg.append({"node": self.root})
+                return agg
+            else:
+                agg[-1]["node"] = next_ele
+                return agg
+
+        values = functools.reduce(reduce, bits, [{
+            "node": self.root
+        }])
+        # chop last one because the reduction anticipates more values
+        return [v["value"] for v in values[:-1]]
+
     class Node:
         GROUND = None
         ROOT = None
@@ -90,6 +129,11 @@ class HuffmanTree:
         @classmethod
         def leaf(cls, value, frequency):
             return cls(cls.GROUND, cls.GROUND, value, frequency)
+
+        @classmethod
+        def from_encoding(cls, s):
+            [v, f] = s.split(".")
+            return cls.leaf(int(v), int(f))
 
         def __init__(self, left, right, value, frequency):
             self.id = id(self)
@@ -117,6 +161,10 @@ class HuffmanTree:
             """
             child.parent = self
             return self
+
+        @property
+        def encoding(self):
+            return "%d.%d" % (self.value, self.frequency)
 
         @property
         def is_leaf(self):
