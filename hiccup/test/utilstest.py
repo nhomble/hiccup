@@ -46,4 +46,10 @@ class UtilsTest(unittest.TestCase):
     def test_first(self):
         arr = [1, 2, 3, 4]
         self.assertEqual(utils.first(arr, lambda x: x > 1), 2)
-        self.assertRaises(RuntimeError,utils.first, arr, lambda x: x < 0)
+        self.assertRaises(RuntimeError, utils.first, arr, lambda x: x < 0)
+
+    def test_flatten(self):
+        self.assertEqual(utils.flatten([
+            [1, 2],
+            [3, 4]
+        ]), [1, 2, 3, 4])

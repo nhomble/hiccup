@@ -83,3 +83,10 @@ def first(l: iter, predicate):
         if predicate(ele):
             return ele
     raise RuntimeError("Found nothing to match predicate")
+
+
+def flatten(l: list):
+    """
+    Simple flatten for my use cases
+    """
+    return functools.reduce(lambda x, y: x + y, l)
