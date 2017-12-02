@@ -62,7 +62,7 @@ class UtilsTest(unittest.TestCase):
         ])
 
     def test_differences_random(self):
-        arr = [random.randint(0, 10) for i in range(100)]
+        arr = [random.randint(0, 10) for _ in range(100)]
         diffs = utils.differences(arr)
         invert = utils.invert_differences(diffs)
         self.assertEqual(arr, invert)
