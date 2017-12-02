@@ -279,7 +279,7 @@ def jpeg_encode(luminance: np.ndarray, chrominances: List[np.ndarray]):
     dc_lum = differential_coding(luminance)
     dc_chs = [differential_coding(m) for m in chrominances]
 
-    ac_lum = run_length_coding(transform.ac_components(luminance))
+    ac_lum = utils.flatten([run_length_coding(transform.ac_components(b)) for b in luminance])
     ac_chs = [run_length_coding(transform.ac_components(m)) for m in chrominances]
 
     dc_lu_huffman = huffman.HuffmanTree.construct_from_data(dc_lum)

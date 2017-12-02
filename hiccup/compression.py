@@ -20,21 +20,41 @@ def jpeg_compression(rgb_image: np.ndarray) -> hic.HicImage:
     """
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
+    channels = {
+        "lum": gray,
+        "cr": color_1,
+        "cb": color_2
+    }
 
-    t_gray = transform.dct_channel(gray, model.QTables.JPEG_LUMINANCE)
-    [t_color_1, t_color_2] = [transform.dct_channel(transform.down_sample(c), model.QTables.JPEG_CHROMINANCE) for c in
-                              [color_1, color_2]]
+    def channel_fun(k, v):
+        if k == "lum":
+            return transform.dct_channel(v, model.QTables.JPEG_LUMINANCE, block_size=settings.JPEG_BLOCK_SIZE)
+        else:
+            return transform.dct_channel(transform.down_sample(v), model.QTables.JPEG_CHROMINANCE,
+                                         block_size=settings.JPEG_BLOCK_SIZE)
 
-    encoding = codec.jpeg_encode(t_gray, [t_color_1, t_color_2])
+    channels = utils.dict_map(channels, channel_fun)
+    return channels
+    # encoding = codec.jpeg_encode(channels["lum"], [channels["cr"], channels["cb"]])
+    #
+    # return hic.HicImage.jpeg_image(encoding)
 
-    return None
 
-
-def jpeg_decompression(hic: hic.HicImage) -> np.ndarray:
+def jpeg_decompression(d) -> np.ndarray:
     """
     Decompress a JPEG image for viewing
     """
-    pass
+
+    def channel_fun(k, v):
+        if k == "lum":
+            return transform.inv_dct_channel(v, model.QTables.JPEG_LUMINANCE, block_size=settings.JPEG_BLOCK_SIZE)
+        else:
+            return transform.up_sample(transform.inv_dct_channel(v, model.QTables.JPEG_CHROMINANCE,
+                                                                 block_size=settings.JPEG_BLOCK_SIZE))
+
+    channels = utils.dict_map(d, channel_fun)
+    y = cv2.merge([channels["lum"], channels["cr"], channels["cb"]])
+    return cv2.cvtColor(y, cv2.COLOR_YCrCb2RGB)
 
 
 def rgb_wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:

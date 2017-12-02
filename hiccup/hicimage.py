@@ -39,6 +39,13 @@ class HicImage:
 
         return cls(model.Compression.HIC, settings_list, payloads)
 
+    @classmethod
+    def jpeg_image(cls, payloads):
+        settings_list = [
+
+        ]
+        return cls(model.Compression.JPEG, settings_list, payloads)
+
     def __init__(self, hic_type, settings: List[Payload], payloads: List[Payload]):
         self.hic_type = hic_type
         self.settings = settings

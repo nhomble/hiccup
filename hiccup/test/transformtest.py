@@ -49,7 +49,7 @@ class TransformTest(unittest.TestCase):
         self.assertEqual(np.sum(dct), 0)
 
     def test_identity(self):
-        random = np.random.randint(-128, 128, (8, 8))
+        random = np.random.randint(-512, 512, (8, 8))
         dct = trans.dct2(random)
         idct = trans.idct2(dct)
         scalar = idct[0][0] / random[0][0]

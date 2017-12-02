@@ -96,7 +96,7 @@ def idct2(matrix: np.ndarray):
     for j in range(N):
         y[:, j] = scipy.fftpack.idct(a[:, j])
 
-    return y
+    return np.divide(y, 256)
 
 
 def _zigzag_indices(matrix: np.ndarray):
@@ -162,6 +162,15 @@ def down_sample(matrix: np.ndarray, factor=2):
     return cv2.pyrDown(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)
 
 
+def inv_dct_channel(channel: np.ndarray, quantization_table: model.QTables, block_size=8):
+    blocks = split_matrix(channel, block_size)
+    rev_q_blocks = [qz.invert_jpeg_quantize(b, quantization_table) for b in blocks]
+    rev_dct = [idct2(b) for b in rev_q_blocks]
+    merged = merge_blocks(np.array(rev_dct), channel.shape)
+    offset = np.add(merged, 128).astype(np.uint8)
+    return offset
+
+
 def dct_channel(channel: np.ndarray, quantization_table: model.QTables, block_size=8):
     """
     Apply the Discrete Cosine transform on a channel of our image to later be encoded
@@ -172,8 +181,8 @@ def dct_channel(channel: np.ndarray, quantization_table: model.QTables, block_si
     transformed_blocks = [dct2(block) for block in blocks]
     qnt_blocks = [qz.jpeg_quantize(block, quantization_table) for block in transformed_blocks]
     quantized = np.array(qnt_blocks)
-    result = merge_blocks(quantized, channel.shape).astype(channel.dtype)
-    return result
+    ret = merge_blocks(quantized, channel.shape)
+    return ret
 
 
 def wavelet_split_resolutions(channel: np.ndarray, wavelet: model.Wavelet, levels=3):

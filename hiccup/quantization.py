@@ -52,6 +52,11 @@ def jpeg_quantize(block: np.ndarray, option: model.QTables):
     return deadzone_quantize(block, t)
 
 
+def invert_jpeg_quantize(block: np.ndarray, option: model.QTables):
+    t = table[option]
+    return np.multiply(block, t)
+
+
 def subband_quantize(subbands, multiplier=1):
     """
     Uniformly dead zone
