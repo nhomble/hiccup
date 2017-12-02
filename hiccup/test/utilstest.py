@@ -87,3 +87,12 @@ class UtilsTest(unittest.TestCase):
             "a": "a1",
             "b": "b2"
         })
+
+    def test_is_gray(self):
+        self.assertTrue(utils.is_gray(np.array([
+            [1, 2],
+            [2, 3]
+        ])))
+        self.assertFalse(utils.is_gray(np.array([
+            [1, 2]
+        ])))

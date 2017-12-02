@@ -133,4 +133,7 @@ def dict_map(d, f):
 
 
 def is_gray(img: np.ndarray):
-    return len(img.shape) == 2
+    """
+    Might want later, take the hackers approach and just assume 2d matrices are always gray images
+    """
+    return len(img.shape) == 2 and img.shape[0] > 1 and img.shape[1] > 1
