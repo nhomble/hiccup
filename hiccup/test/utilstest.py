@@ -96,3 +96,8 @@ class UtilsTest(unittest.TestCase):
         self.assertFalse(utils.is_gray(np.array([
             [1, 2]
         ])))
+
+    def test_size(self):
+        self.assertEqual(utils.size(np.array([
+            [1, 2]
+        ]).shape), 2)
