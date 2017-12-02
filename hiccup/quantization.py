@@ -71,8 +71,10 @@ def quality_threshold_value(vals: list, q_factor=1):
     """
     For wavelet compression, we won't rely on magical tables for quantization, we'll just pick how many coefficients we
     to keep by thresholding a certain percentage as suggested in the literature.
+
+    NB we also just uniformly more aggressively on the subbands so this doesn't have to be used.
     """
     s = list(sorted(vals))
     keep_up_too = int(np.ceil(len(vals) * q_factor))
-    thresh_index = len(vals) - keep_up_too - 1
+    thresh_index = len(vals) - keep_up_too
     return s[thresh_index]
