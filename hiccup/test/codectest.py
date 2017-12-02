@@ -51,3 +51,23 @@ class CodecTest(unittest.TestCase):
 
         self.assertRaises(RuntimeError, codec.jpeg_category, 0, model.Coefficient.AC)
         self.assertRaises(RuntimeError, codec.jpeg_category, 16385, model.Coefficient.AC)
+
+    def test_rle_too_long(self):
+        l = ([0] * 17) + [1]
+        arr = np.array(l)
+        out = codec.run_length_coding(arr)
+        zeros = [s["zeros"] for s in out]
+        self.assertEqual(zeros, [15, 2])
+
+    def _symbol_0_0(self, has, arr):
+        out = codec.run_length_coding(np.array(arr))
+        last = out[-1]
+        self.assertEqual((last["zeros"] == 0 and last["value"] == 0), has)
+
+    def test_symbol_0_0(self):
+        cases = [
+            (False, [0, 0, 5]),
+            (True, [0, 0, 5, 0, 0])
+        ]
+        for case in cases:
+            self._symbol_0_0(*case)

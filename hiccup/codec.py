@@ -10,7 +10,10 @@ import hiccup.transform as transform
 """
 Encoding/Decoding functionality aka
     Run Length encoding
-    Huffman Encoding
+    Huffman Encoding - looking at papers, you can rely on the default Huffman encodings for say jpeg but then for 
+    our eventual Wavelet encoding, the same Huffman encodings are definitely not applicable. To be consistent, and 
+    avoid having to copy the entire RL Huffman table, I'll generate on the fly and persist. This is expensive for
+    smaller images, but for very large images this is a small penalty.
 """
 
 # http://www.globalspec.com/reference/39556/203279/appendix-b-huffman-tables-for-the-dc-and-ac-coefficients-of-the-jpeg-baseline-encoder
@@ -78,14 +81,28 @@ def differential_coding(blocks: np.ndarray):
     return utils.differences(dc_comps)
 
 
-def run_length_coding(arr: np.ndarray):
+def _break_up_rle(code, max_len):
+    l = code["zeros"]
+    div = l // max_len
+    full = {
+        "zeros": max_len,
+        "value": code["value"]
+    }
+    return ([full] * div) + [{
+        "zeros": l - (div * max_len),
+        "value": code["value"]
+    }]
+
+
+def run_length_coding(arr: np.ndarray, max_len=0xF):
     """
     Come up with the run length encoding for a matrix
-
-    TODO: too long
     """
 
     def reduction(agg, next):
+        if "value" in agg[-1]:
+            agg.append({"zeros": 0})
+
         if next == 0:
             agg[-1]["zeros"] += 1
             return agg
@@ -93,14 +110,18 @@ def run_length_coding(arr: np.ndarray):
         if "value" not in agg[-1]:
             agg[-1]["value"] = next
 
-        agg.append({"zeros": 0})
         return agg
 
     rl = functools.reduce(reduction, arr, [{"zeros": 0}])
 
-    # If the last element has value then it was 0! That is a special tuple, (0,0)
+    # If the last element has no value then it was 0! That is a special tuple, (0,0)
     if "value" not in rl[-1]:
         rl[-1] = {"zeros": 0, "value": 0}
+
+    # the goal of RLE in the case of compression is to contain the first symbol (length, size) within a byte
+    # so if the length is too long, then we need to break it up
+    rl = [_break_up_rle(code, max_len) for code in rl]
+    rl = utils.flatten(rl)
 
     return [dict(d, bits=utils.num_bits_for_int(d["value"])) for d in rl]
 
@@ -110,3 +131,4 @@ def jpeg_encode(luminance: np.ndarray, chrominances: List[np.ndarray]):
     Do the standard jpeg encoding
     """
     dc_code = differential_coding(luminance)
+    return None
