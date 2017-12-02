@@ -39,7 +39,7 @@ def jpeg_decompression(hic: hic.HicImage) -> np.ndarray:
 def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
-    # Daubechie should be a setting
+
     [t_gray, t_color_1, t_color_2] = [transform.wavelet_split_resolutions(c, settings.WAVELET) for c in
                                       [gray, color_1, color_2]]
 
