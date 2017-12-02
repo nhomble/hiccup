@@ -13,7 +13,7 @@ Houses the entry functions to either compression algorithm
 """
 
 
-def jpeg_compression(rgb_image: np.ndarray) -> hic.HicImage:
+def jpeg_compression(rgb_image: np.ndarray) -> model.CompressedImage:
     """
     JPEG compression
     """
@@ -33,10 +33,10 @@ def jpeg_compression(rgb_image: np.ndarray) -> hic.HicImage:
                                          block_size=settings.JPEG_BLOCK_SIZE)
 
     channels = utils.dict_map(channels, channel_fun)
-    return channels
+    return model.CompressedImage.from_dict(channels)
 
 
-def jpeg_decompression(d) -> np.ndarray:
+def jpeg_decompression(d: model.CompressedImage) -> np.ndarray:
     """
     Decompress a JPEG image for viewing
     """
@@ -48,12 +48,12 @@ def jpeg_decompression(d) -> np.ndarray:
             return transform.up_sample(transform.inv_dct_channel(v, model.QTables.JPEG_CHROMINANCE,
                                                                  block_size=settings.JPEG_BLOCK_SIZE))
 
-    channels = utils.dict_map(d, channel_fun)
+    channels = utils.dict_map(d.as_dict, channel_fun)
     y = cv2.merge([channels["lum"], channels["cr"], channels["cb"]])
     return cv2.cvtColor(y, cv2.COLOR_YCrCb2RGB)
 
 
-def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
+def wavelet_compression(rgb_image: np.ndarray) -> model.CompressedImage:
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
 
@@ -79,10 +79,10 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
 
     channels = utils.dict_map(channels, channel_func)
 
-    return channels
+    return model.CompressedImage.from_dict(channels)
 
 
-def wavelet_decompression(channels) -> np.ndarray:
+def wavelet_decompression(channels: model.CompressedImage) -> np.ndarray:
     def channel_func(k, v):
         subbands = transform.subband_view(v)
         if settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER != 0:
@@ -92,6 +92,6 @@ def wavelet_decompression(channels) -> np.ndarray:
         offset = np.add(merged, np.power(2, 8)).astype(np.uint8)
         return offset
 
-    channels = utils.dict_map(channels, channel_func)
+    channels = utils.dict_map(channels.as_dict, channel_func)
     yrcrcb = cv2.merge([channels["lum"], channels["cr"], channels["cb"]]).astype(np.uint8)
     return cv2.cvtColor(yrcrcb, cv2.COLOR_YCrCb2RGB)

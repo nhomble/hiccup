@@ -30,3 +30,30 @@ class QTables(enum.Enum):
 class Wavelet(enum.Enum):
     DAUBECHIE = "db1"
     HAAR = "haar"
+
+
+class CompressedImage:
+    """
+    Better for typing
+    """
+
+    @classmethod
+    def from_dict(cls, d):
+        assert len(d) == 3
+        return cls(d["lum"], d["cr"], d["cb"])
+
+    def __init__(self, lum, cr, cb):
+        self.luminance_component = lum
+        self.red_chrominance_component = cr
+        self.blue_chrominance_component = cb
+
+    @property
+    def as_dict(self):
+        """
+        Nice for iterating
+        """
+        return {
+            "lum": self.luminance_component,
+            "cr": self.red_chrominance_component,
+            "cb": self.blue_chrominance_component
+        }
