@@ -41,8 +41,8 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
 
-    [t_gray, t_color_1, t_color_2] = [transform.wavelet_split_resolutions(c, settings.WAVELET) for c in
-                                      [gray, color_1, color_2]]
+    [t_gray, t_color_1, t_color_2] = [transform.wavelet_split_resolutions(
+        c, settings.WAVELET, settings.WAVELET_NUM_LEVELS) for c in [gray, color_1, color_2]]
 
     [t_gray, t_color_1, t_color_2] = [
         transform.linearize_subband(
@@ -53,9 +53,6 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     [t_gray, t_color_1, t_color_2] = [transform.threshold_channel_by_quality(
         b, q_factor=settings.WAVELET_QUALITY_FACTOR) for b in [t_gray, t_color_1, t_color_2]]
 
-    t_gray = [qnt.round_quantize(b) for b in t_gray]
-    t_color_1 = [qnt.round_quantize(b) for b in t_color_1]
-    t_color_2 = [qnt.round_quantize(b) for b in t_color_2]
     encoding = codec.wavelet_encode(t_gray, [t_color_1, t_color_2])
 
     utils.debug_msg("The encoded string is %d long" % len(encoding))
