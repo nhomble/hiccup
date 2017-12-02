@@ -10,3 +10,4 @@ I suppose once I expose all of the settings it will be easier to organize.
 DEBUG = True
 WAVELET = model.Wavelet.DAUBECHIE
 WAVELET_QUALITY_FACTOR = 1
+WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER = 32

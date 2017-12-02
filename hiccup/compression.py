@@ -44,8 +44,11 @@ def wavelet_compression(rgb_image: np.ndarray) -> hic.HicImage:
     [t_gray, t_color_1, t_color_2] = [transform.wavelet_split_resolutions(c, settings.WAVELET) for c in
                                       [gray, color_1, color_2]]
 
-    [t_gray, t_color_1, t_color_2] = [transform.linearize_subband(qnt.subband_quantize(transform.subband_view(b))) for b
-                                      in [t_gray, t_color_1, t_color_2]]
+    [t_gray, t_color_1, t_color_2] = [
+        transform.linearize_subband(
+            qnt.subband_quantize(
+                transform.subband_view(b), multiplier=settings.WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER))
+        for b in [t_gray, t_color_1, t_color_2]]
 
     [t_gray, t_color_1, t_color_2] = [transform.threshold_channel_by_quality(
         b, q_factor=settings.WAVELET_QUALITY_FACTOR) for b in [t_gray, t_color_1, t_color_2]]
