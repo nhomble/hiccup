@@ -136,7 +136,7 @@ class TransformTest(unittest.TestCase):
     def test_dct_ones(self):
         img = np.ones((120, 80)).astype(np.uint8)
         out = trans.dct_channel(img, model.QTables.JPEG_LUMINANCE)
-        self.assertTrue(np.sum(out) > 0)
+        self.assertTrue(np.abs(np.sum(out)) > 0)
 
     def test_dct_null(self):
         img = np.zeros((120, 80)).astype(np.uint8)
@@ -173,7 +173,7 @@ class TransformTest(unittest.TestCase):
 
         self.assertEqual(2, len(out))
         self.assertEqual(np.sum(first), 0)
-        self.assertEqual(np.sum(second), sum(range(94, 100)))
+        self.assertEqual(np.sum(second), sum(range(95, 100)))
 
     def test_dc_component(self):
         matrix = np.array([
