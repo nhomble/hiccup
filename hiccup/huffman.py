@@ -59,10 +59,12 @@ class HuffmanTree:
         """
         return utils.first(self.leaves, lambda l: l.value == value)
 
-    def encode_data(self):
+    def encode_data(self, data=None):
         """
         Construct binary encoding with Huffman tree
         """
+        if data is None:
+            data = self.data
 
         def translate_path(path, str=""):
             if len(path) < 2:
@@ -76,7 +78,7 @@ class HuffmanTree:
                 return translate_path(path, str=str + "0")
             raise RuntimeError("Invalid state")
 
-        paths = [self.get_leaf(self.key_func(d)).path() for d in self.data]
+        paths = [self.get_leaf(self.key_func(d)).path() for d in data]
         strs = [translate_path(path) for path in paths]
         return "".join(strs)
 

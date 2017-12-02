@@ -74,3 +74,9 @@ class HuffmanTest(unittest.TestCase):
         }
         for case in cases.items():
             self._reconstruction_case(*case)
+
+    def test_encode_foreign_data(self):
+        data = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
+        tree = huffman.HuffmanTree.construct_from_data(data)
+        out = tree.encode_data(data=[4, 4, 4, 4])
+        self.assertEqual(out, "1111")
