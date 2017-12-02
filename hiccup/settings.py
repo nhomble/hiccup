@@ -8,8 +8,8 @@ I suppose once I expose all of the settings it will be easier to organize.
 """
 
 DEBUG = True
-WAVELET = model.Wavelet.DAUBECHIE
+WAVELET = model.Wavelet.HAAR
 WAVELET_QUALITY_FACTOR = 1
-WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER = 4
+WAVELET_SUBBAND_QUANTIZATION_MULTIPLIER = 2
 WAVELET_NUM_LEVELS = 3
 WAVELET_TILES = 8

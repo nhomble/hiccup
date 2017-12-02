@@ -29,3 +29,4 @@ class QTables(enum.Enum):
 
 class Wavelet(enum.Enum):
     DAUBECHIE = "db1"
+    HAAR = "haar"
