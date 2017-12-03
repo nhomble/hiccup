@@ -71,6 +71,13 @@ class TransformTest(unittest.TestCase):
             [0, 0, 0, 0, 0, 0]
         ]), merged))
 
+    def test_merge_rect(self):
+        mat = np.ones((3, 4))
+        blocks = trans.split_matrix(mat, 2)
+        merged = trans.merge_blocks(blocks, mat.shape)
+        self.assertEqual(mat.shape, merged.shape)
+        self.assertEqual(blocks.shape, (4, 2, 2))
+
     def test_split_merge(self):
         matrix = np.random.randint(0, 256, (8, 12))
         blocks = trans.split_matrix(matrix, 4)

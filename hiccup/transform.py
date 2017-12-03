@@ -23,8 +23,8 @@ def pad_matrix(matrix: np.ndarray, N):
     if x % N == 0 and y % N == 0:
         return matrix
     new_shape = (
-        x + (N - x % N),
-        y + (N - y % N)
+        x + ((N - x % N) % N),
+        y + ((N - y % N) % N)
     )
     result = np.zeros(new_shape, dtype=matrix.dtype)
     result[:x, :y] = matrix
@@ -50,14 +50,19 @@ def merge_blocks(blocks: np.ndarray, shape):
     y, x = shape
     num, N, _ = blocks.shape
     if y * x != num * N * N:
-        raise RuntimeError("Incompatible dimensions")
+        # I must have done some padding
+        assert y * x < num * N * N  # otherwise we somehow dropped data
+        padded = pad_matrix(np.zeros(shape), N)
+        y, x = padded.shape
 
     d4 = blocks.reshape(y // N, x // N, N, N)
     block_mats = [
         [np.matrix(d4[y][x]) for x in range(d4[y].shape[0])]
         for y in range(d4.shape[0])
     ]
-    return np.array(np.bmat(block_mats))
+    out = np.array(np.bmat(block_mats))
+    sanitized = out[:shape[0], :shape[1]]
+    return sanitized
 
 
 def dct2(matrix: np.ndarray):
