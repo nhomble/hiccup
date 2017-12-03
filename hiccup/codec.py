@@ -33,63 +33,6 @@ class RunLength:
         return type(self) == type(other) and self.value == other.value and self.length == other.length
 
 
-# http://www.globalspec.com/reference/39556/203279/appendix-b-huffman-tables-for-the-dc-and-ac-coefficients-of-the-jpeg-baseline-encoder
-jpeg_categories = {
-    model.Compression.JPEG: {
-        "DC_HUFFMAN_CODE": {
-            model.Coefficient.DC: {
-                0: range(1),
-                1: range(1, 2),
-                2: range(2, 4),
-                3: range(4, 8),
-                4: range(8, 16),
-                5: range(16, 32),
-                6: range(32, 64),
-                7: range(64, 128),
-                8: range(128, 256),
-                9: range(256, 512),
-                10: range(512, 1024),
-                11: range(1024, 2048),
-                12: range(2048, 4096),
-                13: range(4096, 8192),
-                14: range(8192, 16384),
-                15: range(16384, 32768)
-            },
-            model.Coefficient.AC: {
-                0: None,
-                1: range(1, 2),
-                2: range(2, 4),
-                3: range(4, 8),
-                4: range(8, 16),
-                5: range(16, 32),
-                6: range(32, 64),
-                7: range(64, 128),
-                8: range(128, 256),
-                9: range(256, 512),
-                10: range(512, 1024),
-                11: range(1024, 2048),
-                12: range(2048, 4096),
-                13: range(4096, 8192),
-                14: range(8192, 16384),
-                15: None
-            }
-        }
-    }
-}
-
-
-def jpeg_category(val: int, coeff: model.Coefficient):
-    """
-    Determine JPEG DC category for huffman
-
-    From Gonzalez and Wood
-    """
-    for k, v in jpeg_categories[model.Compression.JPEG]["DC_HUFFMAN_CODE"][coeff].items():
-        if v is not None and abs(val) in v:
-            return k
-    raise RuntimeError("You must have a category for value: " + str(val))
-
-
 def differential_coding(blocks: np.ndarray):
     """
     Produce differential coding for the DC coefficients
@@ -283,7 +226,17 @@ def wavelet_decode(sections):
            wavelet_decode_pull_subbands(ch2, shapes)
 
 
-def jpeg_encode(compressed: model.CompressedImage):
+def huffman_encode(huff: huffman.HuffmanTree) -> hic.Payload:
+    leaves = huff.encode_table()
+    return hic.PayloadStringP([hic.IntegerStringP([t[0], t[1]]) for t in leaves])
+
+
+def huffman_data_encode(huff: huffman.HuffmanTree) -> hic.Payload:
+    data = huff.encode_data()
+    return hic.BitStringP(data)
+
+
+def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
     """
     Generally follow JPEG encoding. Since for the wavelet work I am don't have some standard huffman tree to work with
     I might as well be consistent between the two implementations and just encode the entire array with custom
@@ -300,10 +253,28 @@ def jpeg_encode(compressed: model.CompressedImage):
     ac_comps = utils.dict_map(compressed.as_dict, lambda _, v: run_length_coding(
         transform.ac_components(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE))))
 
-    dc_huff = utils.dict_map(dc_comps, lambda _, v: huffman.HuffmanTree.construct_from_data(v))
+    dc_huffs = utils.dict_map(dc_comps, lambda _, v: huffman.HuffmanTree.construct_from_data(v))
     ac_value_huffs = utils.dict_map(ac_comps,
                                     lambda _, v: huffman.HuffmanTree.construct_from_data(v, key_func=lambda s: s.value))
     ac_length_huffs = utils.dict_map(ac_comps,
                                      lambda _, v: huffman.HuffmanTree.construct_from_data(v,
                                                                                           key_func=lambda s: s.length))
-    return None
+
+    def encode_huff(d):
+        huffs = [t[1] for t in d.items()]
+        return [huffman_encode(h) for h in huffs]
+
+    def encode_data(d):
+        huffs = [t[1] for t in d.items()]
+        return [huffman_data_encode(h) for h in huffs]
+
+    payloads = utils.flatten([
+        encode_huff(dc_huffs),
+        encode_huff(ac_value_huffs),
+        encode_huff(ac_length_huffs),
+
+        encode_data(dc_huffs),
+        encode_data(ac_value_huffs),
+        encode_data(ac_length_huffs)
+    ])
+    return hic.HicImage.wavelet_image(payloads)

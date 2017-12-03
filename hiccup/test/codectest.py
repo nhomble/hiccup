@@ -30,28 +30,6 @@ class CodecTest(unittest.TestCase):
                     {'zeros': 1, 'value': -2, 'bits': 2}, {'zeros': 0, 'value': 0, 'bits': 0}]
         self.assertEqual([codec.RunLength.from_dict(e) for e in expected], rl)
 
-    def test_dc_category(self):
-        cases = [
-            (0, model.Coefficient.DC, 0),
-            (-1, model.Coefficient.DC, 1),
-            (1, model.Coefficient.DC, 1),
-            (511, model.Coefficient.DC, 9)
-        ]
-        for case in cases:
-            self.assertEqual(codec.jpeg_category(case[0], case[1]), case[2], msg="jpeg_category( %d, %s ) == %d" % case)
-
-    def test_ac_category(self):
-        cases = [
-            (-1, model.Coefficient.DC, 1),
-            (1, model.Coefficient.DC, 1),
-            (511, model.Coefficient.DC, 9)
-        ]
-        for case in cases:
-            self.assertEqual(codec.jpeg_category(case[0], case[1]), case[2], msg="jpeg_category( %d, %s ) == %d" % case)
-
-        self.assertRaises(RuntimeError, codec.jpeg_category, 0, model.Coefficient.AC)
-        self.assertRaises(RuntimeError, codec.jpeg_category, 16385, model.Coefficient.AC)
-
     def test_rle_too_long(self):
         l = ([0] * 17) + [1]
         arr = np.array(l)
@@ -71,3 +49,14 @@ class CodecTest(unittest.TestCase):
         ]
         for case in cases:
             self._symbol_0_0(*case)
+
+    def test_jpeg_encode(self):
+        compressed = model.CompressedImage(
+            np.matrix([[1, 2], [3, 4]]),
+            np.matrix([[5, 6], [7, 8]]),
+            np.matrix([[9, 10], [11, 12]])
+        )
+        hic = codec.jpeg_encode(compressed)
+        payloads = hic.payloads
+        self.assertEqual(len(payloads), 18)
+        self.assertEqual(payloads[0].payloads[0].numbers, [1, 1])

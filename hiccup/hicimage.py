@@ -1,3 +1,4 @@
+import abc
 from typing import List
 
 import hiccup.model as model
@@ -9,19 +10,31 @@ Wrap the representation of a HIC image to make it easier to write/retrieve from 
 
 
 class Payload:
-    pass
+    @property
+    @abc.abstractmethod
+    def byte_stream(self):
+        pass
 
 
-class BitString(Payload):
+class IntegerStringP(Payload):
+    def __init__(self, numbers: List[int]):
+        self.numbers = numbers
+
+    @property
+    def byte_stream(self):
+        return bytearray()
+
+
+class BitStringP(Payload):
     def __init__(self, string: str):
         self.payload = string
 
     @property
     def byte_stream(self):
-        pass
+        return bytearray()
 
 
-class PlainString(Payload):
+class PlainStringP(Payload):
     def __init__(self, string: str):
         self.payload = string
 
@@ -30,11 +43,20 @@ class PlainString(Payload):
         return self.payload.encode(encoding="ascii")
 
 
+class PayloadStringP(Payload):
+    def __init__(self, payloads: List[Payload]):
+        self.payloads = payloads
+
+    @property
+    def byte_stream(self):
+        return bytearray()
+
+
 class HicImage:
     @classmethod
     def wavelet_image(cls, payloads):
         settings_list = [
-            PlainString(settings.WAVELET),
+            PlainStringP(settings.WAVELET),
         ]
 
         return cls(model.Compression.HIC, settings_list, payloads)
