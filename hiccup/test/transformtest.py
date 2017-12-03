@@ -191,11 +191,15 @@ class TransformTest(unittest.TestCase):
         self.assertEqual(1, trans.dc_component(matrix))
 
     def test_ac_component(self):
-        matrix = np.array([
+        matrix = np.array([[
             [1, 2],
             [3, 4]
-        ])
-        self.assertTrue(np.array_equiv(np.array([3, 2, 4]), trans.ac_components(matrix)))
+        ],
+            [
+                [5, 6],
+                [7, 8]
+            ]])
+        self.assertTrue(np.array_equiv(np.array([3, 2, 4, 7, 6, 8]), trans.ac_components(matrix)))
 
     def test_subband_view(self):
         l = [

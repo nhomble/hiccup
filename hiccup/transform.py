@@ -261,9 +261,11 @@ def dc_component(block: np.ndarray):
 
 def ac_components(block: np.ndarray):
     """
-    Return the AC components for a block (JPEG)
+    Return the AC components for blocks (JPEG)
     """
-    return zigzag(block)[1:]
+    block_list = block.tolist()
+    zigs = [zigzag(m)[1:] for m in block_list]
+    return utils.flatten(zigs)
 
 
 def force_merge(lu, c1, c2):
