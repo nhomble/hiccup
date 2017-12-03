@@ -71,7 +71,7 @@ class CodecTest(unittest.TestCase):
         )
         hic = codec.jpeg_encode(compressed)
         payloads = hic.payloads
-        self.assertEqual(len(payloads), 18)
+        self.assertEqual(len(payloads), 19)
         self.assertEqual(hic.hic_type, model.Compression.JPEG)
         self.assertEqual(payloads[0].payloads[0].numbers, (1, 1))
 
