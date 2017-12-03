@@ -3,6 +3,8 @@ from tkinter import Tk
 
 import hiccup.run as run
 import hiccup.model as model
+import hiccup.settings as settings
+
 from hiccup.app import BelchUI
 
 """
@@ -22,18 +24,24 @@ def run_gui():
 
 def main():
     parser = argparse.ArgumentParser(description="hombln's image compression")
-    parser.add_argument('--compress', '-c', metavar='IMG_PATH', nargs=1,
+    parser.add_argument('--compress', '-c', metavar='IMG_PATH',
                         help='compress the image via cmd line with a certain style')
-    parser.add_argument('--decompress', '-d', metavar='HIC', nargs=1, help='decompress the hic image via cmd line')
-    parser.add_argument('--compression', '-s', metavar='STYLE', nargs=1, choices=[
-        model.Compression.HIC.value, model.Compression.JPEG.value
-    ], help='dictate which compression algorithm we use')
-    parser.add_argument('--output', '-o', metavar='OUT', nargs=1, help='output path', default='.')
+    parser.add_argument('--decompress', '-d', metavar='HIC', help='decompress the hic image via cmd line')
+    parser.add_argument('--compression', '-s', metavar='STYLE',
+                        choices=[model.Compression.HIC.value, model.Compression.JPEG.value],
+                        help='dictate which compression algorithm we use', default=model.Compression.HIC.value)
+    parser.add_argument('--output', '-o', metavar='OUT', help='output path', default='.')
+    parser.add_argument('--verbose', '-v', help='control the debug flag', default=False, action='store_true')
     args = parser.parse_args()
+
+    if not args.verbose:
+        print("=== Suppressing debug messages ==")
+        settings.DEBUG = args.verbose
+
     if is_gui(args):
         run_gui()
     elif args.compress is not None:
-        run.compress(args.compress, args.output, model.Compression(args.style))
+        run.compress(args.compress, args.output, model.Compression(args.compression))
     elif args.decompress is not None:
         run.decompress(args.decompress)
     else:

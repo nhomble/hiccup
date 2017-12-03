@@ -10,9 +10,9 @@ Entry functions for belch
 """
 
 
-def img_name(path):
+def img_name(path, c: model.Compression):
     f = os.path.split(path)[-1]
-    return f + ".hic"
+    return f + ".%s-hic" % c.value
 
 
 def compress(path, output, c: model.Compression):
@@ -25,7 +25,7 @@ def compress(path, output, c: model.Compression):
         hi = codec.wavelet_encode(compressed)
     else:
         raise RuntimeError("Unknown compression type")
-    output = os.path.join(output, img_name(path))
+    output = os.path.join(output, img_name(path, c))
     hi.write_file(output)
 
 
