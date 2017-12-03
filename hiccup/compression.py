@@ -49,7 +49,7 @@ def jpeg_decompression(d: model.CompressedImage) -> np.ndarray:
                                                                  block_size=settings.JPEG_BLOCK_SIZE))
 
     channels = utils.dict_map(d.as_dict, channel_fun)
-    y = cv2.merge([channels["lum"], channels["cr"], channels["cb"]])
+    y = transform.force_merge(channels["lum"], channels["cr"], channels["cb"])
     return cv2.cvtColor(y, cv2.COLOR_YCrCb2RGB)
 
 
@@ -93,5 +93,5 @@ def wavelet_decompression(channels: model.CompressedImage) -> np.ndarray:
         return offset
 
     channels = utils.dict_map(channels.as_dict, channel_func)
-    yrcrcb = cv2.merge([channels["lum"], channels["cr"], channels["cb"]]).astype(np.uint8)
+    yrcrcb = transform.force_merge(channels["lum"], channels["cr"], channels["cb"]).astype(np.uint8)
     return cv2.cvtColor(yrcrcb, cv2.COLOR_YCrCb2RGB)

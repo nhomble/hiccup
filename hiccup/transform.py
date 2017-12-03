@@ -5,6 +5,7 @@ import cv2
 import scipy
 import scipy.fftpack
 import pywt
+import math
 
 import hiccup.model as model
 import hiccup.utils as utils
@@ -153,18 +154,18 @@ def up_sample(matrix: np.ndarray, factor=2):
     """
     Upsample our array, thankfully opencv does most of the work for us
     """
-    x, y = matrix.shape
+    y, x = matrix.shape
     new_shape = (x * factor, y * factor)
-    return cv2.pyrUp(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)
+    return cv2.pyrUp(matrix, dstsize=new_shape)
 
 
 def down_sample(matrix: np.ndarray, factor=2):
     """
     Downsample our array, thankfully opencv does this too
     """
-    x, y = matrix.shape
+    y, x = matrix.shape
     new_shape = (x // factor, y // factor)
-    return cv2.pyrDown(matrix, dstsize=new_shape, borderType=cv2.BORDER_DEFAULT)
+    return cv2.pyrDown(matrix, dstsize=new_shape)
 
 
 def inv_dct_channel(channel: np.ndarray, quantization_table: model.QTables, block_size=8):
@@ -263,3 +264,14 @@ def ac_components(block: np.ndarray):
     Return the AC components for a block (JPEG)
     """
     return zigzag(block)[1:]
+
+
+def force_merge(lu, c1, c2):
+    """
+    Little implementation hack, the sampling can run us into an off by 1 situation between lu and the cs so just resize
+    the lu to fit
+    """
+    shape = c1.shape
+    assert shape == c2.shape
+    lu = lu[:shape[0], :shape[1]]
+    return cv2.merge([lu, c1, c2])
