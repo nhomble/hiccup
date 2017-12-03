@@ -86,3 +86,24 @@ class CodecTest(unittest.TestCase):
         inverse = codec.jpeg_decode(hic)
         self.assertEqual(compressed, inverse)
 
+    def test_jpeg_inverse_inner_zeros(self):
+        settings.JPEG_BLOCK_SIZE = 2
+        compressed = model.CompressedImage(
+            np.array([[1, 0, 0, 22], [3, 0, 33, 44]]),
+            np.array([[5, 6, 0, 66], [7, 8, 77, 88]]),
+            np.array([[9, 0, 99, 1010], [11, 12, 1111, 1212]])
+        )
+        hic = codec.jpeg_encode(compressed)
+        inverse = codec.jpeg_decode(hic)
+        self.assertEqual(compressed, inverse)
+
+    def test_jpeg_inverse_end_zeros(self):
+        settings.JPEG_BLOCK_SIZE = 2
+        compressed = model.CompressedImage(
+            np.array([[1, 2, 11, 0], [3, 0, 33, 0]]),
+            np.array([[5, 6, 55, 0], [7, 8, 77, 0]]),
+            np.array([[9, 10, 99, 0], [11, 12, 1111, 0]])
+        )
+        hic = codec.jpeg_encode(compressed)
+        inverse = codec.jpeg_decode(hic)
+        self.assertEqual(compressed, inverse)

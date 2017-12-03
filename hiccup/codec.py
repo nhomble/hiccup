@@ -40,6 +40,10 @@ class RunLength:
     def segment(self):
         return [0] * self.length + [self.value]
 
+    @property
+    def is_trailing(self):
+        return self.value == 0 and self.length == 0
+
 
 def differential_coding(blocks: np.ndarray):
     """
@@ -96,7 +100,7 @@ def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
 
 def decode_run_length(rles: List[RunLength], length: int):
     arr = utils.flatten([d.segment for d in rles])
-    fill = length - len(arr)
+    fill = (length - len(arr)) % length
     arr += ([0] * fill)
     return arr
 
