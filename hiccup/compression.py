@@ -17,6 +17,7 @@ def jpeg_compression(rgb_image: np.ndarray) -> model.CompressedImage:
     """
     JPEG compression
     """
+    utils.debug_msg("Starting JPEG compression")
     yrcrcb = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2YCrCb)
     [gray, color_1, color_2] = cv2.split(yrcrcb)
     channels = {
@@ -26,6 +27,7 @@ def jpeg_compression(rgb_image: np.ndarray) -> model.CompressedImage:
     }
 
     def channel_fun(k, v):
+        utils.debug_msg("Process channel: " + k)
         if k == "lum":
             return transform.dct_channel(v, model.QTables.JPEG_LUMINANCE, block_size=settings.JPEG_BLOCK_SIZE)
         else:
@@ -33,6 +35,7 @@ def jpeg_compression(rgb_image: np.ndarray) -> model.CompressedImage:
                                          block_size=settings.JPEG_BLOCK_SIZE)
 
     channels = utils.dict_map(channels, channel_fun)
+    utils.debug_msg("Transformed our channels")
     return model.CompressedImage.from_dict(channels)
 
 

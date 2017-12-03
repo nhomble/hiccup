@@ -273,13 +273,16 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
     For RL it's also easier implementation-wise to split up the length from the value and not try to optimize and weave
     them together. Yes, the encoding will suffer bloat, but we are trying to highlight the transforms anyway.
     """
+    utils.debug_msg("Starting JPEG encoding")
     dc_comps = utils.dict_map(compressed.as_dict,
                               lambda _, v: differential_coding(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)))
 
+    utils.debug_msg("Determine differences DC components")
     # on each transformed channel, run RLE on the AC components of each block
     ac_comps = utils.dict_map(compressed.as_dict, lambda _, v: run_length_coding(
         transform.ac_components(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE))))
 
+    utils.debug_msg("Determine RLEs for AC components")
     dc_huffs = utils.dict_map(dc_comps, lambda _, v: huffman.HuffmanTree.construct_from_data(v))
     ac_value_huffs = utils.dict_map(ac_comps,
                                     lambda _, v: huffman.HuffmanTree.construct_from_data(v, key_func=lambda s: s.value))
@@ -322,9 +325,10 @@ def jpeg_decode(hic: hic.HicImage) -> model.CompressedImage:
         encode_data(ac_length_huffs)
     ])
     """
-
+    utils.debug_msg("JPEG decode")
     assert hic.hic_type == model.Compression.JPEG
     payloads = hic.payloads
+    utils.debug_msg("Decoding Huffman trees")
     dc_huffs = {
         "lum": huffman_decode(payloads[0]),
         "cr": huffman_decode(payloads[1]),
@@ -340,33 +344,41 @@ def jpeg_decode(hic: hic.HicImage) -> model.CompressedImage:
         "cr": huffman_decode(payloads[7]),
         "cb": huffman_decode(payloads[8])
     }
+
+    utils.debug_msg("Decode DC differences")
     dc_comps = {
         "lum": huffman_data_decode(payloads[9], dc_huffs["lum"]),
         "cr": huffman_data_decode(payloads[10], dc_huffs["cr"]),
         "cb": huffman_data_decode(payloads[11], dc_huffs["cb"]),
     }
+
+    utils.debug_msg("Decode RLE values")
     ac_values = {
         "lum": huffman_data_decode(payloads[12], ac_value_huffs["lum"]),
         "cr": huffman_data_decode(payloads[13], ac_value_huffs["cr"]),
         "cb": huffman_data_decode(payloads[14], ac_value_huffs["cb"]),
     }
+    utils.debug_msg("Decode RLE lengths")
     ac_lengths = {
         "lum": huffman_data_decode(payloads[15], ac_length_huffs["lum"]),
         "cr": huffman_data_decode(payloads[16], ac_length_huffs["cr"]),
         "cb": huffman_data_decode(payloads[17], ac_length_huffs["cb"]),
     }
     shape = payloads[18].numbers
+    utils.debug_msg("Unloaded all of the data")
     # ====
 
+    sub_length = utils.size(settings.JPEG_BLOCK_SHAPE()) - 1
     ac_rle = utils.dict_map(ac_values,
                             lambda k, v: [RunLength(t[1], t[0]) for t in list(zip(ac_lengths[k], v))])
     ac_mats = utils.dict_map(ac_rle,
-                             lambda _, v: decode_run_length(v, settings.JPEG_BLOCK_SIZE * settings.JPEG_BLOCK_SIZE - 1))
+                             lambda _, v: decode_run_length(v, sub_length))
     ac_mats = utils.dict_map(ac_mats,
-                             lambda _, v: utils.group_tuples(v, 3))
+                             lambda _, v: utils.group_tuples(v, sub_length))
     dc_comps = utils.dict_map(dc_comps, lambda _, v: utils.invert_differences(v))
 
     def merge_comps(dc_key, dc_values):
+        utils.debug_msg("Merging: " + dc_key)
         tuples = ac_mats[dc_key]
         zipped = zip(dc_values, tuples)
         lin_mats = [[t[0], *t[1]] for t in zipped]
