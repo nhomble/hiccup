@@ -383,9 +383,10 @@ def jpeg_decode(hic: hic.HicImage) -> model.CompressedImage:
 
     def merge_comps(dc_key, dc_values):
         utils.debug_msg("Merging: " + dc_key)
-        tuples = ac_mats[dc_key]
-        zipped = zip(dc_values, tuples)
-        lin_mats = [[t[0], *t[1]] for t in zipped]
+        tuples = ac_mats[dc_key]  # there are all of the AC zigzag arrays missing their DC component
+        assert len(tuples) == len(dc_values)
+        zipped = zip(dc_values, tuples)  # combine them to be mapped later
+        lin_mats = [[t[0], *t[1]] for t in zipped]  # create the linearized block
         mats = [transform.izigzag(np.array(m), settings.JPEG_BLOCK_SHAPE()) for m in lin_mats]
         return mats
 
