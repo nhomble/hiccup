@@ -3,6 +3,7 @@ from typing import List
 
 import numpy as np
 
+import hiccup.settings as settings
 import hiccup.model as model
 import hiccup.utils as utils
 import hiccup.transform as transform
@@ -17,6 +18,20 @@ Encoding/Decoding functionality aka
     avoid having to copy the entire RL Huffman table, I'll generate on the fly and persist. This is expensive for
     smaller images, but for very large images this is a small penalty.
 """
+
+
+class RunLength:
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d["value"], d["zeros"])
+
+    def __init__(self, value, length):
+        self.value = value
+        self.length = length
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.value == other.value and self.length == other.length
+
 
 # http://www.globalspec.com/reference/39556/203279/appendix-b-huffman-tables-for-the-dc-and-ac-coefficients-of-the-jpeg-baseline-encoder
 jpeg_categories = {
@@ -96,7 +111,7 @@ def _break_up_rle(code, max_len):
     }]
 
 
-def run_length_coding(arr: np.ndarray, max_len=0xF):
+def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
     """
     Come up with the run length encoding for a matrix
     """
@@ -125,7 +140,7 @@ def run_length_coding(arr: np.ndarray, max_len=0xF):
     rl = [_break_up_rle(code, max_len) for code in rl]
     rl = utils.flatten(rl)
 
-    return [dict(d, bits=utils.num_bits_for_int(d["value"])) for d in rl]
+    return [RunLength.from_dict(r) for r in rl]
 
 
 def decode_run_length(rles: list, length: int):
@@ -268,47 +283,27 @@ def wavelet_decode(sections):
            wavelet_decode_pull_subbands(ch2, shapes)
 
 
-def jpeg_encode(luminance: np.ndarray, chrominances: List[np.ndarray]):
+def jpeg_encode(compressed: model.CompressedImage):
     """
     Generally follow JPEG encoding. Since for the wavelet work I am don't have some standard huffman tree to work with
     I might as well be consistent between the two implementations and just encode the entire array with custom
     Huffman trees. To attempt to be honest with the implementation though, I'll still treat the DC components
-    separately by doing the differences and again applying a custom Huffman. A mean feature of DCT on each block is the
+    separately by doing the differences and again applying a custom Huffman. A main feature of DCT on each block is the
     meaning of the DC component.
+
+    For RL it's also easier implementation-wise to split up the length from the value and not try to optimize and weave
+    them together. Yes, the encoding will suffer bloat, but we are trying to highlight the transforms anyway.
     """
-    dc_lum = differential_coding(luminance)
-    dc_chs = [differential_coding(m) for m in chrominances]
+    dc_comps = utils.dict_map(compressed.as_dict,
+                              lambda _, v: differential_coding(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)))
 
-    ac_lum = utils.flatten([run_length_coding(transform.ac_components(b)) for b in luminance])
-    ac_chs = [run_length_coding(transform.ac_components(m)) for m in chrominances]
+    ac_comps = utils.dict_map(compressed.as_dict, lambda _, v: run_length_coding(
+        transform.ac_components(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE))))
 
-    dc_lu_huffman = huffman.HuffmanTree.construct_from_data(dc_lum)
-    dc_ch_huffman = huffman.HuffmanTree.construct_from_data(utils.flatten(dc_chs))
-    ac_lu_huffman = huffman.HuffmanTree.construct_from_data(ac_lum, key_func=lambda rl: rl["zeros"])
-    ac_ch_huffman = huffman.HuffmanTree.construct_from_data(utils.flatten(ac_chs), key_func=lambda rl: rl["zeros"])
-
-    master_string = "\n".join([
-        # table data
-        dc_lu_huffman.encode_table(),
-        dc_ch_huffman.encode_table(),
-        ac_lu_huffman.encode_table(),
-        ac_ch_huffman.encode_table(),
-        # huffman encoding
-        dc_lu_huffman.encode_data(),
-        dc_ch_huffman.encode_data(chrominances[0]),
-        dc_ch_huffman.encode_data(chrominances[1]),
-        ac_lu_huffman.encode_data(),
-        ac_ch_huffman.encode_data(chrominances[0]),
-        ac_ch_huffman.encode_data(chrominances[1]),
-        # auxiliary
-        [s["size"] for s in ac_lum],
-        [s["value"] for s in ac_lum],
-
-        [s["size"] for s in ac_chs[0]],
-        [s["value"] for s in ac_chs[0]],
-
-        [s["size"] for s in ac_chs[1]],
-        [s["value"] for s in ac_chs[1]]
-
-    ])
-    return master_string
+    dc_huff = utils.dict_map(dc_comps, lambda _, v: huffman.HuffmanTree.construct_from_data(v))
+    ac_value_huffs = utils.dict_map(ac_comps,
+                                    lambda _, v: huffman.HuffmanTree.construct_from_data(v, key_func=lambda s: s.value))
+    ac_length_huffs = utils.dict_map(ac_comps,
+                                     lambda _, v: huffman.HuffmanTree.construct_from_data(v,
+                                                                                          key_func=lambda s: s.length))
+    return None

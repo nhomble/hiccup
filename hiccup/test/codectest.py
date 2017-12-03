@@ -28,7 +28,7 @@ class CodecTest(unittest.TestCase):
         expected = [{'zeros': 0, 'value': 99, 'bits': 7}, {'zeros': 1, 'value': -59, 'bits': 6},
                     {'zeros': 6, 'value': 7, 'bits': 3}, {'zeros': 4, 'value': 12, 'bits': 4},
                     {'zeros': 1, 'value': -2, 'bits': 2}, {'zeros': 0, 'value': 0, 'bits': 0}]
-        self.assertEqual(expected, rl)
+        self.assertEqual([codec.RunLength.from_dict(e) for e in expected], rl)
 
     def test_dc_category(self):
         cases = [
@@ -56,13 +56,13 @@ class CodecTest(unittest.TestCase):
         l = ([0] * 17) + [1]
         arr = np.array(l)
         out = codec.run_length_coding(arr)
-        zeros = [s["zeros"] for s in out]
+        zeros = [s.length for s in out]
         self.assertEqual(zeros, [15, 2])
 
     def _symbol_0_0(self, has, arr):
         out = codec.run_length_coding(np.array(arr))
         last = out[-1]
-        self.assertEqual((last["zeros"] == 0 and last["value"] == 0), has)
+        self.assertEqual((last.length == 0 and last.value == 0), has)
 
     def test_symbol_0_0(self):
         cases = [
