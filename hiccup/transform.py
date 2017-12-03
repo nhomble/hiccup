@@ -275,3 +275,24 @@ def force_merge(lu, c1, c2):
     assert shape == c2.shape
     lu = lu[:shape[0], :shape[1]]
     return cv2.merge([lu, c1, c2])
+
+
+def high_pass(img: np.ndarray, ksize=3):
+    """
+    https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_imgproc/py_gradients/py_gradients.html
+
+    https://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/sobel_derivatives/sobel_derivatives.html
+    """
+    sx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=ksize)
+    sy = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=ksize)
+
+    abs_sx = np.uint8(np.absolute(sx))
+    abs_sy = np.uint8(np.absolute(sy))
+    return cv2.addWeighted(abs_sx, .5, abs_sy, .5, 0)
+
+
+def low_pass(img):
+    """
+    Low pass filter, kept simple with a Gaussian
+    """
+    return cv2.GaussianBlur(img, (17, 17), .7)
