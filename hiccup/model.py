@@ -1,3 +1,4 @@
+import numpy as np
 import enum
 
 """
@@ -48,6 +49,10 @@ class CompressedImage:
         self.blue_chrominance_component = cb
 
     @property
+    def shape(self):
+        return self.luminance_component.shape
+
+    @property
     def as_dict(self):
         """
         Nice for iterating
@@ -57,3 +62,11 @@ class CompressedImage:
             "cr": self.red_chrominance_component,
             "cb": self.blue_chrominance_component
         }
+
+    def __eq__(self, other):
+        if type(self) != type(other):
+            return False
+        return \
+            np.array_equiv(self.luminance_component, other.luminance_component) and np.array_equiv(
+                self.red_chrominance_component, other.red_chrominance_component) and np.array_equiv(
+                self.blue_chrominance_component, other.blue_chrominance_component)

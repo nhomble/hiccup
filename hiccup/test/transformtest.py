@@ -31,6 +31,15 @@ class TransformTest(unittest.TestCase):
         self.assertEqual(3, splits[2][0][0])
         self.assertEqual(4, splits[3][0][0])
 
+    def test_split_singleton(self):
+        square = np.array([
+            [1, 2],
+            [3, 4]
+        ])
+        splits = trans.split_matrix(square, 2)
+        self.assertEqual(len(splits), 1)
+        self.assertTrue(np.array_equiv(square, splits[0]))
+
     def test_block_must_pad(self):
         square = np.array([
             [1, 2, 3],

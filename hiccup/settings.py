@@ -16,4 +16,8 @@ WAVELET_THRESHOLD = 5
 WAVELET_NUM_LEVELS = 3
 WAVELET_TILES = 8
 
-JPEG_BLOCK_SIZE = 8 # never going to change this since this would require an update to our qnt tables
+JPEG_BLOCK_SIZE = 8  # never going to change this since this would require an update to our qnt tables
+
+
+def JPEG_BLOCK_SHAPE():
+    return JPEG_BLOCK_SIZE, JPEG_BLOCK_SIZE  # convenience

@@ -9,6 +9,7 @@ import hiccup.utils as utils
 import hiccup.transform as transform
 import hiccup.huffman as huffman
 import hiccup.hicimage as hic
+from hiccup.hicimage import BitStringP
 
 """
 Encoding/Decoding functionality aka
@@ -31,6 +32,13 @@ class RunLength:
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value and self.length == other.length
+
+    def __str__(self):
+        return "(%d, %d)" % (self.length, self.value)
+
+    @property
+    def segment(self):
+        return [0] * self.length + [self.value]
 
 
 def differential_coding(blocks: np.ndarray):
@@ -86,16 +94,11 @@ def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
     return [RunLength.from_dict(r) for r in rl]
 
 
-def decode_run_length(rles: list, length: int):
-    arr = utils.flatten([([0] * d["zeros"]) + [d["value"]] for d in rles])
+def decode_run_length(rles: List[RunLength], length: int):
+    arr = utils.flatten([d.segment for d in rles])
     fill = length - len(arr)
     arr += ([0] * fill)
     return arr
-
-
-def recover_run_length_coding(zeros, values):
-    tups = zip(zeros, values)
-    return [{"zeros": tup[0], "value": tup[1]} for tup in tups]
 
 
 def jpeg_rle(rle):
@@ -227,13 +230,36 @@ def wavelet_decode(sections):
 
 
 def huffman_encode(huff: huffman.HuffmanTree) -> hic.Payload:
+    """
+    Encode huffman in payload
+    """
+
     leaves = huff.encode_table()
-    return hic.PayloadStringP([hic.IntegerStringP([t[0], t[1]]) for t in leaves])
+    return hic.PayloadStringP([hic.IntegerString2P(t[0], t[1]) for t in leaves])
+
+
+def huffman_decode(data: hic.PayloadStringP) -> huffman.HuffmanTree:
+    """
+    Decode huffman from payload
+    """
+    number_string = data.payloads
+    leaves = [p.numbers for p in number_string]
+    return huffman.HuffmanTree.construct_from_coding(leaves)
 
 
 def huffman_data_encode(huff: huffman.HuffmanTree) -> hic.Payload:
+    """
+    Encode huffman data into payload
+    """
     data = huff.encode_data()
     return hic.BitStringP(data)
+
+
+def huffman_data_decode(data: hic.BitStringP, huffman: huffman.HuffmanTree) -> list:
+    """
+    Decode huffman data from payload with huffman tree
+    """
+    return huffman.decode_data(data.payload)
 
 
 def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
@@ -250,6 +276,7 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
     dc_comps = utils.dict_map(compressed.as_dict,
                               lambda _, v: differential_coding(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)))
 
+    # on each transformed channel, run RLE on the AC components of each block
     ac_comps = utils.dict_map(compressed.as_dict, lambda _, v: run_length_coding(
         transform.ac_components(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE))))
 
@@ -275,6 +302,77 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
 
         encode_data(dc_huffs),
         encode_data(ac_value_huffs),
+        encode_data(ac_length_huffs),
+
+        [hic.IntegerString2P(compressed.shape[0], compressed.shape[1])]
+    ])
+    return hic.HicImage.jpeg_image(payloads)
+
+
+def jpeg_decode(hic: hic.HicImage) -> model.CompressedImage:
+    """
+    Reverse jpeg_encode()
+    payloads = utils.flatten([
+        encode_huff(dc_huffs),
+        encode_huff(ac_value_huffs),
+        encode_huff(ac_length_huffs),
+
+        encode_data(dc_huffs),
+        encode_data(ac_value_huffs),
         encode_data(ac_length_huffs)
     ])
-    return hic.HicImage.wavelet_image(payloads)
+    """
+
+    assert hic.hic_type == model.Compression.JPEG
+    payloads = hic.payloads
+    dc_huffs = {
+        "lum": huffman_decode(payloads[0]),
+        "cr": huffman_decode(payloads[1]),
+        "cb": huffman_decode(payloads[2])
+    }
+    ac_value_huffs = {
+        "lum": huffman_decode(payloads[3]),
+        "cr": huffman_decode(payloads[4]),
+        "cb": huffman_decode(payloads[5])
+    }
+    ac_length_huffs = {
+        "lum": huffman_decode(payloads[6]),
+        "cr": huffman_decode(payloads[7]),
+        "cb": huffman_decode(payloads[8])
+    }
+    dc_comps = {
+        "lum": huffman_data_decode(payloads[9], dc_huffs["lum"]),
+        "cr": huffman_data_decode(payloads[10], dc_huffs["cr"]),
+        "cb": huffman_data_decode(payloads[11], dc_huffs["cb"]),
+    }
+    ac_values = {
+        "lum": huffman_data_decode(payloads[12], ac_value_huffs["lum"]),
+        "cr": huffman_data_decode(payloads[13], ac_value_huffs["cr"]),
+        "cb": huffman_data_decode(payloads[14], ac_value_huffs["cb"]),
+    }
+    ac_lengths = {
+        "lum": huffman_data_decode(payloads[15], ac_length_huffs["lum"]),
+        "cr": huffman_data_decode(payloads[16], ac_length_huffs["cr"]),
+        "cb": huffman_data_decode(payloads[17], ac_length_huffs["cb"]),
+    }
+    shape = payloads[18].numbers
+    # ====
+
+    ac_rle = utils.dict_map(ac_values,
+                            lambda k, v: [RunLength(t[1], t[0]) for t in list(zip(ac_lengths[k], v))])
+    ac_mats = utils.dict_map(ac_rle,
+                             lambda _, v: decode_run_length(v, settings.JPEG_BLOCK_SIZE * settings.JPEG_BLOCK_SIZE - 1))
+    ac_mats = utils.dict_map(ac_mats,
+                             lambda _, v: utils.group_tuples(v, 3))
+    dc_comps = utils.dict_map(dc_comps, lambda _, v: utils.invert_differences(v))
+
+    def merge_comps(dc_key, dc_values):
+        tuples = ac_mats[dc_key]
+        zipped = zip(dc_values, tuples)
+        lin_mats = [[t[0], *t[1]] for t in zipped]
+        mats = [transform.izigzag(np.array(m), settings.JPEG_BLOCK_SHAPE()) for m in lin_mats]
+        return mats
+
+    compressed = utils.dict_map(dc_comps, merge_comps)
+    merged = utils.dict_map(compressed, lambda _, v: transform.merge_blocks(np.array(v), shape))
+    return model.CompressedImage.from_dict(merged)

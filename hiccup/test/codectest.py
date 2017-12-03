@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 
+import hiccup.settings as settings
 import hiccup.model as model
 import hiccup.transform as transform
 import hiccup.codec as codec
@@ -30,6 +31,18 @@ class CodecTest(unittest.TestCase):
                     {'zeros': 1, 'value': -2, 'bits': 2}, {'zeros': 0, 'value': 0, 'bits': 0}]
         self.assertEqual([codec.RunLength.from_dict(e) for e in expected], rl)
 
+    def test_run_length_trivial(self):
+        matrix = np.array([
+            [1, 2],
+            [3, 4]
+        ])
+        rl = codec.run_length_coding(transform.zigzag(matrix)[1:])
+        self.assertEqual(rl, [
+            codec.RunLength(3, 0),
+            codec.RunLength(2, 0),
+            codec.RunLength(4, 0)
+        ])
+
     def test_rle_too_long(self):
         l = ([0] * 17) + [1]
         arr = np.array(l)
@@ -52,11 +65,24 @@ class CodecTest(unittest.TestCase):
 
     def test_jpeg_encode(self):
         compressed = model.CompressedImage(
-            np.matrix([[1, 2], [3, 4]]),
-            np.matrix([[5, 6], [7, 8]]),
-            np.matrix([[9, 10], [11, 12]])
+            np.array([[1, 2], [3, 4]]),
+            np.array([[5, 6], [7, 8]]),
+            np.array([[9, 10], [11, 12]])
         )
         hic = codec.jpeg_encode(compressed)
         payloads = hic.payloads
         self.assertEqual(len(payloads), 18)
-        self.assertEqual(payloads[0].payloads[0].numbers, [1, 1])
+        self.assertEqual(hic.hic_type, model.Compression.JPEG)
+        self.assertEqual(payloads[0].payloads[0].numbers, (1, 1))
+
+    def test_jpeg_inverse(self):
+        settings.JPEG_BLOCK_SIZE = 2
+        compressed = model.CompressedImage(
+            np.array([[1, 2, 11, 22], [3, 4, 33, 44]]),
+            np.array([[5, 6, 55, 66], [7, 8, 77, 88]]),
+            np.array([[9, 10, 99, 1010], [11, 12, 1111, 1212]])
+        )
+        hic = codec.jpeg_encode(compressed)
+        inverse = codec.jpeg_decode(hic)
+        self.assertEqual(compressed, inverse)
+
