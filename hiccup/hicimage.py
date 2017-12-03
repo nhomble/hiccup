@@ -1,5 +1,6 @@
 import abc
 from typing import List
+import pickle
 
 import hiccup.model as model
 import hiccup.settings as settings
@@ -73,6 +74,11 @@ class HicImage:
         ]
         return cls(model.Compression.JPEG, settings_list, payloads)
 
+    @staticmethod
+    def from_file(path):
+        with open(path, 'rb') as f:
+            return pickle.load(f)
+
     def __init__(self, hic_type, settings: List[Payload], payloads: List[Payload]):
         self.hic_type = hic_type
         self.settings = settings
@@ -80,11 +86,11 @@ class HicImage:
 
     @property
     def bytes_stream(self):
-        return bytearray(b"\x10\x32\xFF")
+        return bytearray()
 
     def write_file(self, path):
         with open(path, 'wb') as f:
-            f.write(self.bytes_stream)
+            pickle.dump(self, f)
 
     def apply_settings(self):
         pass
