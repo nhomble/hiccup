@@ -2,6 +2,7 @@ import argparse
 from tkinter import Tk
 
 import hiccup.run as run
+import hiccup.model as model
 from hiccup.app import BelchUI
 
 """
@@ -24,17 +25,17 @@ def main():
     parser.add_argument('--compress', '-c', metavar='IMG_PATH', nargs=1,
                         help='compress the image via cmd line with a certain style')
     parser.add_argument('--decompress', '-d', metavar='HIC', nargs=1, help='decompress the hic image via cmd line')
-    parser.add_argument('--style', '-s', metavar='STYLE', nargs=1, choices=[
-        'FOURIER', 'WAVELET'
+    parser.add_argument('--compression', '-s', metavar='STYLE', nargs=1, choices=[
+        model.Compression.HIC.value, model.Compression.JPEG.value
     ], help='dictate which compression algorithm we use')
     parser.add_argument('--output', '-o', metavar='OUT', nargs=1, help='output path', default='.')
     args = parser.parse_args()
     if is_gui(args):
         run_gui()
     elif args.compress is not None:
-        run.compress(args.compress, args.output, args.style)
+        run.compress(args.compress, args.output, model.Compression(args.style))
     elif args.decompress is not None:
-        run.decompress(args.decompress, args.output)
+        run.decompress(args.decompress)
     else:
         raise RuntimeError("Illegal state")
 

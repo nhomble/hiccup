@@ -1,5 +1,7 @@
 from tkinter import Button, OptionMenu, StringVar
 from tkinter.filedialog import askopenfilename, askdirectory
+
+import hiccup.model as model
 import hiccup.run as run
 
 """
@@ -20,7 +22,7 @@ class BelchUI:
 
         self.style_var = StringVar(master)
         self.style_dd = OptionMenu(master, self.style_var, *{
-            'Wavelet', 'Fourier'
+            model.Compression.JPEG.value, model.Compression.HIC.value
         })
         self.style_dd.pack()
 
@@ -40,7 +42,7 @@ class BelchUI:
         self.filename = askopenfilename()
 
     def decompress(self):
-        run.decompress(self.filename, self.dir)
+        run.decompress(self.filename)
 
     def compress(self):
-        run.compress(self.filename, self.dir, self.style_var.get())
+        run.compress(self.filename, self.dir, model.Compression(self.style_var.get()))

@@ -154,8 +154,8 @@ def wavelet_encode(compressed: model.CompressedImage):
         encode_data(length_huffs),
 
         [
-            hic.Integer2P(smallest[0], smallest[1]),
-            hic.Integer2P(biggest[0], biggest[1])
+            hic.TupP(smallest[0], smallest[1]),
+            hic.TupP(biggest[0], biggest[1])
         ]
     ])
     return hic.HicImage.wavelet_image(payloads)
@@ -197,7 +197,7 @@ def wavelet_decoded_length(min_shape, max_shape):
 def wavelet_decode(hic: hic.HicImage) -> model.CompressedImage:
     utils.debug_msg("Wavelet decode")
     assert hic.hic_type == model.Compression.HIC
-    payloads = hic.payloads
+    payloads = hic.payload
     utils.debug_msg("Decoding Huffman trees")
     value_huffs = {
         "lum": huffman_decode(payloads[0]),
@@ -243,7 +243,7 @@ def huffman_encode(huff: huffman.HuffmanTree) -> hic.Payload:
     """
 
     leaves = huff.encode_table()
-    return hic.PayloadStringP([hic.IntegerString2P(t[0], t[1]) for t in leaves])
+    return hic.PayloadStringP(hic.TupP, [hic.TupP(t[0], t[1]) for t in leaves])
 
 
 def huffman_decode(data: hic.PayloadStringP) -> huffman.HuffmanTree:
@@ -322,8 +322,8 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
         encode_data(ac_length_huffs),
 
         [
-            hic.Integer2P(compressed.shape[0][0], compressed.shape[0][1]),
-            hic.Integer2P(compressed.shape[1][0], compressed.shape[1][1])
+            hic.TupP(compressed.shape[0][0], compressed.shape[0][1]),
+            hic.TupP(compressed.shape[1][0], compressed.shape[1][1])
         ]
     ])
     return hic.HicImage.jpeg_image(payloads)
