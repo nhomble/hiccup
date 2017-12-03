@@ -22,9 +22,8 @@ class HuffmanTree:
         return cls(root, leaves, data, key_func)
 
     @classmethod
-    def construct_from_coding(cls, coding):
-        segments = coding.split(" ")
-        leaves = [cls.Node.from_encoding(s) for s in segments]
+    def construct_from_coding(cls, segments):
+        leaves = [cls.Node.leaf(*s) for s in segments]
         root, leaves = cls._construct(leaves)
         return cls(root, leaves, None, None)
 
@@ -113,11 +112,8 @@ class HuffmanTree:
         return "".join(strs)
 
     def encode_table(self):
-        """
-        TODO encode this even better, although it probably shouldn't adjust the overall compression that much
-        """
         s = [n.encoding for n in self.leaves]
-        return " ".join(s)
+        return s
 
     def decode_data(self, str):
         bits = list(str)
@@ -164,11 +160,6 @@ class HuffmanTree:
         def leaf(cls, value, frequency):
             return cls(cls.GROUND, cls.GROUND, value, frequency)
 
-        @classmethod
-        def from_encoding(cls, s):
-            [v, f] = s.split(".")
-            return cls.leaf(int(v), int(f))
-
         def __init__(self, left, right, value, frequency):
             self.id = id(self)
             self.parent = self.ROOT
@@ -198,7 +189,7 @@ class HuffmanTree:
 
         @property
         def encoding(self):
-            return "%d.%d" % (self.value, self.frequency)
+            return self.value, self.frequency
 
         @property
         def is_leaf(self):
