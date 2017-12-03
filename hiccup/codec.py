@@ -81,9 +81,9 @@ def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
             agg[-1]["value"] = next
 
         return agg
-
+    utils.debug_msg("Going to determine RLE for %d size array" % len(arr))
     rl = functools.reduce(reduction, arr, [{"zeros": 0}])
-
+    utils.debug_msg("%d long RLE created" % len(rl))
     # If the last element has no value then it was 0! That is a special tuple, (0,0)
     if "value" not in rl[-1]:
         rl[-1] = {"zeros": 0, "value": 0}
@@ -91,9 +91,11 @@ def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
     # the goal of RLE in the case of compression is to contain the first symbol (length, size) within a byte
     # so if the length is too long, then we need to break it up
     if max_len is not None:
+        utils.debug_msg("Breaking up RLE lengths that are larger than %d" % max_len)
         rl = [_break_up_rle(code, max_len) for code in rl]
         rl = utils.flatten(rl)
 
+    utils.debug_msg("Make RLE objects")
     return [RunLength.from_dict(r) for r in rl]
 
 
@@ -285,18 +287,20 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
     dc_comps = utils.dict_map(compressed.as_dict,
                               lambda _, v: differential_coding(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)))
 
-    utils.debug_msg("Determine differences DC components")
+    utils.debug_msg("Determined differences DC components")
 
     def ac_comp_fun(k, v):
+        utils.debug_msg("Determining AC components for: " + k)
         splits = transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)
         acs = transform.ac_components(splits)
+        utils.debug_msg("Calculating RLE for: " + k)
         out = run_length_coding(acs)
         return out
 
     # on each transformed channel, run RLE on the AC components of each block
     ac_comps = utils.dict_map(compressed.as_dict, ac_comp_fun)
 
-    utils.debug_msg("Determine RLEs for AC components")
+    utils.debug_msg("Determined RLEs for AC components")
     dc_huffs = utils.dict_map(dc_comps, lambda _, v: huffman.HuffmanTree.construct_from_data(v))
     ac_value_huffs = utils.dict_map(ac_comps,
                                     lambda _, v: huffman.HuffmanTree.construct_from_data(v, key_func=lambda s: s.value))
