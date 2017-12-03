@@ -20,10 +20,10 @@ setup(
         'image compression :: python3'
     ],
     install_requires=[
-        "scipy",
-        "opencv-python",
         "numpy",
+        "opencv-python",
         "rawpy",
-        "PyWavelets"
+        "PyWavelets",
+        "scipy",
     ],
 )

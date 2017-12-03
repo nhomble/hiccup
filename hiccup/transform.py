@@ -2,10 +2,8 @@ from typing import Tuple, List
 import functools
 import numpy as np
 import cv2
-import scipy
-import scipy.fftpack
 import pywt
-import math
+import scipy.fftpack
 
 import hiccup.model as model
 import hiccup.utils as utils
