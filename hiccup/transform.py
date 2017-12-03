@@ -168,6 +168,10 @@ def down_sample(matrix: np.ndarray, factor=2):
 
 
 def inv_dct_channel(channel: np.ndarray, quantization_table: model.QTables, block_size=8):
+    """
+    Invert what is done in dct_channel()
+    """
+
     blocks = split_matrix(channel, block_size)
     rev_q_blocks = [qz.invert_jpeg_quantize(b, quantization_table) for b in blocks]
     rev_dct = [idct2(b) for b in rev_q_blocks]
