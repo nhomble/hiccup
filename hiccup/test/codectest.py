@@ -107,3 +107,26 @@ class CodecTest(unittest.TestCase):
         hic = codec.jpeg_encode(compressed)
         inverse = codec.jpeg_decode(hic)
         self.assertEqual(compressed, inverse)
+
+    def test_zero_blocks(self):
+        settings.JPEG_BLOCK_SIZE = 2
+        compressed = model.CompressedImage(
+            np.array([[0, 0, 11, 0], [0, 0, 0, 0]]),
+            np.array([[0, 0, 55, 0], [0, 0, 0, 0]]),
+            np.array([[9, 10, 99, 1010], [11, 12, 1111, 1212]])
+        )
+        hic = codec.jpeg_encode(compressed)
+        inverse = codec.jpeg_decode(hic)
+        self.assertEqual(compressed, inverse)
+
+    def test_zero_block_rle(self):
+        matrix = np.array([
+            [0, 0, 11, 0],
+            [0, 0, 0, 0]
+        ])
+        lin = transform.zigzag(matrix)
+        out = codec.run_length_coding(lin)
+        self.assertEqual(out, [
+            codec.RunLength(11, 3),
+            codec.RunLength(0, 0)
+        ])

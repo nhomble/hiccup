@@ -100,26 +100,9 @@ def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
 
 def decode_run_length(rles: List[RunLength], length: int):
     arr = utils.flatten([d.segment for d in rles])
-    fill = (length - len(arr)) % length
+    fill = length - len(arr)  # it's a hard length because I know what it should be
     arr += ([0] * fill)
     return arr
-
-
-def jpeg_rle(rle):
-    """
-    JPEG defines an encoding for the each run length code since the DCT coefficients are maxes at a certain range. The
-    wavelet basis functions should also be within the
-    """
-    pass
-
-
-def encode_shape(shape):
-    return "%d.%d" % shape
-
-
-def decode_shape(s):
-    [x, y] = s.split(".")
-    return int(x), int(y)
 
 
 def wavelet_encode(luminance: list, chrominances: List[list]):
@@ -282,9 +265,15 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
                               lambda _, v: differential_coding(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)))
 
     utils.debug_msg("Determine differences DC components")
+
+    def ac_comp_fun(k, v):
+        splits = transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)
+        acs = transform.ac_components(splits)
+        out = run_length_coding(acs)
+        return out
+
     # on each transformed channel, run RLE on the AC components of each block
-    ac_comps = utils.dict_map(compressed.as_dict, lambda _, v: run_length_coding(
-        transform.ac_components(transform.split_matrix(v, settings.JPEG_BLOCK_SIZE))))
+    ac_comps = utils.dict_map(compressed.as_dict, ac_comp_fun)
 
     utils.debug_msg("Determine RLEs for AC components")
     dc_huffs = utils.dict_map(dc_comps, lambda _, v: huffman.HuffmanTree.construct_from_data(v))
@@ -373,10 +362,11 @@ def jpeg_decode(hic: hic.HicImage) -> model.CompressedImage:
     # ====
 
     sub_length = utils.size(settings.JPEG_BLOCK_SHAPE()) - 1
+    ac_length = utils.size(shape) - len(dc_comps["lum"])
     ac_rle = utils.dict_map(ac_values,
                             lambda k, v: [RunLength(t[1], t[0]) for t in list(zip(ac_lengths[k], v))])
     ac_mats = utils.dict_map(ac_rle,
-                             lambda _, v: decode_run_length(v, sub_length))
+                             lambda _, v: decode_run_length(v, ac_length))
     ac_mats = utils.dict_map(ac_mats,
                              lambda _, v: utils.group_tuples(v, sub_length))
     dc_comps = utils.dict_map(dc_comps, lambda _, v: utils.invert_differences(v))
