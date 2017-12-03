@@ -296,3 +296,23 @@ def low_pass(img):
     Low pass filter, kept simple with a Gaussian
     """
     return cv2.GaussianBlur(img, (17, 17), .7)
+
+
+def salt_pepper(img: np.ndarray, prob=.01):
+    """
+    Random add impulse noise
+    """
+    assert not utils.is_gray(img)
+    splits = cv2.split(img)
+
+    def _vec(ele):
+        r = np.random.rand()
+        if r <= prob:
+            return 255
+        else:
+            return ele
+
+    vector = np.vectorize(_vec)
+
+    mapped = [vector(s) for s in splits]
+    return cv2.merge(mapped)
