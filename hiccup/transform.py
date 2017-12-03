@@ -293,11 +293,16 @@ def high_pass(img: np.ndarray, ksize=3):
     return cv2.addWeighted(abs_sx, .5, abs_sy, .5, 0)
 
 
-def low_pass(img):
+def low_pass(img, k=(3, 3)):
     """
     Low pass filter, kept simple with a Gaussian
     """
-    return cv2.GaussianBlur(img, (17, 17), .7)
+    if utils.is_gray(img):
+        return cv2.GaussianBlur(img, k, 5)
+    else:
+        splits = cv2.split(img)
+        splits = [cv2.GaussianBlur(s, k, 5) for s in splits]
+        return cv2.merge(splits)
 
 
 def salt_pepper(img: np.ndarray, prob=.01):
