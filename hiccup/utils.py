@@ -137,3 +137,10 @@ def is_gray(img: np.ndarray):
     Might want later, take the hackers approach and just assume 2d matrices are always gray images
     """
     return len(img.shape) == 2 and img.shape[0] > 1 and img.shape[1] > 1
+
+
+def bin_string(i: int):
+    """
+    Binary string
+    """
+    return bin(i)[2:]

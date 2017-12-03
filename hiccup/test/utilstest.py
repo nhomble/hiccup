@@ -101,3 +101,6 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(utils.size(np.array([
             [1, 2]
         ]).shape), 2)
+
+    def test_bin_string(self):
+        self.assertEqual("11", utils.bin_string(3))
