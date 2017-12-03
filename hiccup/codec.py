@@ -9,7 +9,6 @@ import hiccup.utils as utils
 import hiccup.transform as transform
 import hiccup.huffman as huffman
 import hiccup.hicimage as hic
-from hiccup.hicimage import BitStringP
 
 """
 Encoding/Decoding functionality aka
@@ -112,70 +111,77 @@ def decode_run_length(rles: List[RunLength], length: int):
     return arr
 
 
-def wavelet_encode(luminance: list, chrominances: List[list]):
+def wavelet_encode(compressed: model.CompressedImage):
     """
-    In brief reading of literature, Huffman coding is still considered for wavelet image compression.
+    In brief reading of literature, Huffman coding is still considered for wavelet image compression. There are other
+    more effective (and complicated schemes) that I think are out of scope of this project which is just to introduce
+    the concepts.
     """
 
-    # def lin(L):
-    #     return utils.flatten([utils.img_as_list(i) for i in L])
-    #
-    # full_lum_data = lin(luminance)
-    # utils.debug_msg("Full wavelet luminance data length: %d" % len(full_lum_data))
-    # utils.debug_msg("Full wavelet luminance data\n%s" % " ".join([str(i) for i in full_lum_data]))
-    # rl_lum_data = run_length_coding(full_lum_data)
-    # zlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["zeros"])
-    # vlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["value"])
-    #
-    # utils.debug_msg("Constructed luminance wavelet huffmans")
-    #
-    # rl_ch_1 = run_length_coding(lin(chrominances[0]))
-    # rl_ch_2 = run_length_coding(lin(chrominances[1]))
-    # rl_chr_data = rl_ch_1 + rl_ch_2
-    # zch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["zeros"])
-    # vch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["value"])
-    #
-    # utils.debug_msg("Constructed chrominance wavelet huffmans")
-    #
-    # master_array = [
-    #     # huffman tables
-    #     hic.PlainString(zlum_huff.encode_table()),
-    #     hic.PlainString(vlum_huff.encode_table()),
-    #     hic.PlainString(zch_huff.encode_table()),
-    #     hic.PlainString(vch_huff.encode_table()),
-    #
-    #     hic.BitString(zlum_huff.encode_data()),
-    #     hic.BitString(vlum_huff.encode_data()),
-    #
-    #     hic.BitString(zch_huff.encode_data(data=rl_ch_1)),
-    #     hic.BitString(vch_huff.encode_data(data=rl_ch_1)),
-    #     hic.BitString(zch_huff.encode_data(data=rl_ch_2)),
-    #     hic.BitString(vch_huff.encode_data(data=rl_ch_2)),
-    #
-    #     hic.PlainString(encode_shape(luminance[0].shape)),
-    #     hic.PlainString(encode_shape(luminance[-1].shape))
-    # ]
-    # return master_array
-    pass
+    def collapse_subbands(k, v):
+        out = [transform.zigzag(l) for l in v]
+        out = utils.flatten(out)
+        return out
+
+    utils.debug_msg("Starting Wavelet encoding")
+    lin_subbands = utils.dict_map(compressed.as_dict, collapse_subbands)
+    utils.debug_msg("Have completed linearizing the subbands")
+    rles = utils.dict_map(lin_subbands, lambda _, v: run_length_coding(v))
+    utils.debug_msg("Have completed the run length encodings")
+
+    values_huffs = utils.dict_map(rles,
+                                  lambda _, v: huffman.HuffmanTree.construct_from_data(v, key_func=lambda t: t.value))
+    length_huffs = utils.dict_map(rles,
+                                  lambda _, v: huffman.HuffmanTree.construct_from_data(v, key_func=lambda t: t.length))
+    utils.debug_msg("Huffman trees are constructed")
+
+    def encode_huff(d):
+        huffs = [t[1] for t in d.items()]
+        return [huffman_encode(h) for h in huffs]
+
+    def encode_data(d):
+        huffs = [t[1] for t in d.items()]
+        return [huffman_data_encode(h) for h in huffs]
+
+    smallest = compressed.luminance_component[0].shape
+    biggest = compressed.luminance_component[-1].shape
+
+    payloads = utils.flatten([
+        encode_huff(values_huffs),
+        encode_huff(length_huffs),
+
+        encode_data(values_huffs),
+        encode_data(length_huffs),
+
+        [
+            hic.Integer2P(smallest[0], smallest[1]),
+            hic.Integer2P(biggest[0], biggest[1])
+        ]
+    ])
+    return hic.HicImage.wavelet_image(payloads)
 
 
 def wavelet_decode_pull_subbands(data, shapes):
     offset = utils.size(shapes[0])
-    subbands = [np.array(data[:offset]).reshape(shapes[0])]
+    subbands = [transform.izigzag(np.array(data[:offset]), shapes[0])]
 
     for i in range(len(shapes)):
-        subbands.append(np.array(data[offset:offset + utils.size(shapes[i])]).reshape(shapes[i]))
+        subbands.append(transform.izigzag(np.array(data[offset:offset + utils.size(shapes[i])]), shapes[i]))
         offset += utils.size(shapes[i])
 
-        subbands.append(np.array(data[offset:offset + utils.size(shapes[i])]).reshape(shapes[i]))
+        subbands.append(transform.izigzag(np.array(data[offset:offset + utils.size(shapes[i])]), shapes[i]))
         offset += utils.size(shapes[i])
 
-        subbands.append(np.array(data[offset:offset + utils.size(shapes[i])]).reshape(shapes[i]))
+        subbands.append(transform.izigzag(np.array(data[offset:offset + utils.size(shapes[i])]), shapes[i]))
         offset += utils.size(shapes[i])
     return subbands
 
 
 def wavelet_decoded_subbands_shapes(min_shape, max_shape):
+    """
+    We just do Haar or Daubechie, assume power of 2
+    """
+
     levels = int(np.sqrt(max_shape[0] // min_shape[0]))
     shapes = [(min_shape[0] * (np.power(2, i)), min_shape[1] * (np.power(2, i))) for i in range(0, levels + 1)]
     return shapes
@@ -188,40 +194,47 @@ def wavelet_decoded_length(min_shape, max_shape):
     return length
 
 
-def wavelet_decode(sections):
-    zlum_huff = huffman.HuffmanTree.construct_from_coding(sections[0])
-    vlum_huff = huffman.HuffmanTree.construct_from_coding(sections[1])
-    zch_huff = huffman.HuffmanTree.construct_from_coding(sections[2])
-    vch_huff = huffman.HuffmanTree.construct_from_coding(sections[3])
+def wavelet_decode(hic: hic.HicImage) -> model.CompressedImage:
+    utils.debug_msg("Wavelet decode")
+    assert hic.hic_type == model.Compression.HIC
+    payloads = hic.payloads
+    utils.debug_msg("Decoding Huffman trees")
+    value_huffs = {
+        "lum": huffman_decode(payloads[0]),
+        "cr": huffman_decode(payloads[1]),
+        "cb": huffman_decode(payloads[2])
+    }
+    length_huffs = {
+        "lum": huffman_decode(payloads[3]),
+        "cr": huffman_decode(payloads[4]),
+        "cb": huffman_decode(payloads[5])
+    }
 
-    zlum_data = zlum_huff.decode_data(sections[4])
-    vlum_data = vlum_huff.decode_data(sections[5])
+    utils.debug_msg("Decode RLE values")
+    value_comps = {
+        "lum": huffman_data_decode(payloads[6], value_huffs["lum"]),
+        "cr": huffman_data_decode(payloads[7], value_huffs["cr"]),
+        "cb": huffman_data_decode(payloads[8], value_huffs["cb"]),
+    }
+    utils.debug_msg("Decode RLE lengths")
+    length_comps = {
+        "lum": huffman_data_decode(payloads[9], length_huffs["lum"]),
+        "cr": huffman_data_decode(payloads[10], length_huffs["cr"]),
+        "cb": huffman_data_decode(payloads[11], length_huffs["cb"]),
+    }
+    min_shape = payloads[12].numbers
+    max_shape = payloads[13].numbers
 
-    zch1_data = zch_huff.decode_data(sections[6])
-    vch1_data = vch_huff.decode_data(sections[7])
-
-    zch2_data = zch_huff.decode_data(sections[8])
-    vch2_data = vch_huff.decode_data(sections[9])
-
-    min_shape = decode_shape(sections[10])
-    max_shape = decode_shape(sections[11])
-
+    utils.debug_msg("Unloaded all of the data")
+    # ====
+    rles = utils.dict_map(value_comps,
+                          lambda k, v: [RunLength(value=t[1], length=t[0]) for t in list(zip(length_comps[k], v))])
     length = wavelet_decoded_length(min_shape, max_shape)
 
-    lum_rle = recover_run_length_coding(zlum_data, vlum_data)
-    ch1_rle = recover_run_length_coding(zch1_data, vch1_data)
-    ch2_rle = recover_run_length_coding(zch2_data, vch2_data)
-
-    lum = decode_run_length(lum_rle, length)
-    ch1 = decode_run_length(ch1_rle, length)
-    ch2 = decode_run_length(ch2_rle, length)
-
-    utils.debug_msg("Recovered luminance from RLE\n%s" % " ".join([str(l) for l in lum]))
-
+    data = utils.dict_map(rles, lambda _, v: decode_run_length(v, length))
     shapes = wavelet_decoded_subbands_shapes(min_shape, max_shape)
-    return wavelet_decode_pull_subbands(lum, shapes), \
-           wavelet_decode_pull_subbands(ch1, shapes), \
-           wavelet_decode_pull_subbands(ch2, shapes)
+    channels = utils.dict_map(data, lambda _, v: wavelet_decode_pull_subbands(v, shapes))
+    return model.CompressedImage.from_dict(channels)
 
 
 def huffman_encode(huff: huffman.HuffmanTree) -> hic.Payload:
@@ -277,9 +290,6 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
     def ac_comp_fun(k, v):
         splits = transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)
         acs = transform.ac_components(splits)
-        if k == "lum":
-            s = [str(i) for i in acs]
-            print(" ".join(s))
         out = run_length_coding(acs)
         return out
 
@@ -312,8 +322,8 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
         encode_data(ac_length_huffs),
 
         [
-            hic.IntegerString2P(compressed.shape[0][0], compressed.shape[0][1]),
-            hic.IntegerString2P(compressed.shape[1][0], compressed.shape[1][1])
+            hic.Integer2P(compressed.shape[0][0], compressed.shape[0][1]),
+            hic.Integer2P(compressed.shape[1][0], compressed.shape[1][1])
         ]
     ])
     return hic.HicImage.jpeg_image(payloads)

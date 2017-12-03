@@ -18,6 +18,20 @@ class Payload:
         pass
 
 
+class Integer2P(Payload):
+    def __init__(self, n1, n2):
+        self.n1 = n1
+        self.n2 = n2
+
+    @property
+    def numbers(self):
+        return self.n1, self.n2
+
+    @property
+    def byte_stream(self):
+        return bytearray()
+
+
 class IntegerString2P(Payload):
     def __init__(self, n1, n2):
         self.n1 = n1

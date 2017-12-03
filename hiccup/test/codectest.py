@@ -1,10 +1,13 @@
 import unittest
 import numpy as np
 
+import hiccup.utils as utils
 import hiccup.settings as settings
 import hiccup.model as model
 import hiccup.transform as transform
 import hiccup.codec as codec
+
+settings.DEBUG = False
 
 
 class CodecTest(unittest.TestCase):
@@ -73,7 +76,7 @@ class CodecTest(unittest.TestCase):
         payloads = hic.payloads
         self.assertEqual(len(payloads), 20)
         self.assertEqual(hic.hic_type, model.Compression.JPEG)
-        self.assertEqual(payloads[0].payloads[0].numbers, (1, 1))
+        self.assertEqual(payloads[0].payloads[0].numbers, (1, '1'))
 
     def test_jpeg_inverse(self):
         settings.JPEG_BLOCK_SIZE = 2
@@ -186,3 +189,26 @@ class CodecTest(unittest.TestCase):
         invert = codec.decode_run_length(rle, 15)
         rle_2 = codec.run_length_coding(invert, max_len=0xF)
         self.assertEqual(rle, rle_2)
+
+    def test_subband_shapes(self):
+        out = codec.wavelet_decoded_subbands_shapes((64, 64), (256, 256))
+        self.assertEqual([(64, 64), (128, 128), (256, 256)], out)
+
+    def test_pull_subbands(self):
+        expected = [
+            np.array(range(4)).reshape((2, 2)),
+            np.array(range(4, 8)).reshape((2, 2)),
+            np.array(range(8, 12)).reshape((2, 2)),
+            np.array(range(12, 16)).reshape((2, 2)),
+
+            np.array(range(16, 32)).reshape((4, 4)),
+            np.array(range(32, 48)).reshape((4, 4)),
+            np.array(range(48, 64)).reshape((4, 4))
+        ]
+        data = np.array(utils.flatten([transform.zigzag(m) for m in expected]))
+        shapes = [(2, 2), (4, 4)]
+        out = codec.wavelet_decode_pull_subbands(data, shapes)
+        self.assertEqual(len(expected), len(out))
+        z = zip(expected, out)
+        for e in z:
+            self.assertTrue(np.array_equal(e[0], e[1]))
