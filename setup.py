@@ -23,6 +23,7 @@ setup(
         "scipy",
         "opencv-python",
         "numpy",
-        "rawpy"
+        "rawpy",
+        "PyWavelets"
     ],
 )
