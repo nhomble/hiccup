@@ -259,11 +259,11 @@ def dc_component(block: np.ndarray):
     return block[0][0]
 
 
-def ac_components(block: np.ndarray):
+def ac_components(blocks: np.ndarray):
     """
     Return the AC components for blocks (JPEG)
     """
-    block_list = block.tolist()
+    block_list = blocks.tolist()
     zigs = [zigzag(m)[1:] for m in block_list]
     return utils.flatten(zigs)
 
