@@ -50,7 +50,7 @@ class CompressedImage:
 
     @property
     def shape(self):
-        return self.luminance_component.shape
+        return self.luminance_component.shape, self.red_chrominance_component.shape
 
     @property
     def as_dict(self):

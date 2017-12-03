@@ -73,7 +73,7 @@ class HuffmanTest(unittest.TestCase):
             "random": [random.randint(0, 20) for _ in range(10000)],
             "equal frequencies": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
             "single point": [0],
-            "singleton tree": [0, 0, 0, 0, 0]
+            "singleton tree": [0, 0, 0, 0, 0],
         }
         for case in cases.items():
             self._reconstruction_case(*case)
@@ -83,3 +83,29 @@ class HuffmanTest(unittest.TestCase):
         tree = huffman.HuffmanTree.construct_from_data(data)
         out = tree.encode_data(data=[4, 4, 4, 4])
         self.assertEqual(out, "1111")
+
+    def test_encode_same_freq(self):
+        data = [0, 0, 1, 1]
+        tree = huffman.HuffmanTree.construct_from_data(data)
+
+        code_1 = tree.encode_table()
+        code_2 = list(reversed(code_1))
+
+        tree_1 = huffman.HuffmanTree.construct_from_coding(code_1)
+        tree_2 = huffman.HuffmanTree.construct_from_coding(code_2)
+        self.assertEqual(tree_1.encode_data(data=data), tree_2.encode_data(data=data))
+
+    def test_reconstruct_simpler(self):
+        tree = huffman.HuffmanTree.construct_from_coding([
+            ("A", "1"),
+            ("B", "01"),
+            ("C", "00")
+        ])
+        self.assertEqual(tree.encode_data("ABC"), "10100")
+
+    def test_reconstruct_ya_simple(self):
+        data = [1, 1, 1, 1, 2, 2, 2, 3]
+        t = huffman.HuffmanTree.construct_from_data(data)
+        enc = t.encode_table()
+        tt = huffman.HuffmanTree.construct_from_coding(enc)
+        self.assertEqual(t.encode_data(data=data), tt.encode_data(data=data))

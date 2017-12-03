@@ -46,9 +46,9 @@ class CodecTest(unittest.TestCase):
     def test_rle_too_long(self):
         l = ([0] * 17) + [1]
         arr = np.array(l)
-        out = codec.run_length_coding(arr)
+        out = codec.run_length_coding(arr, max_len=0xF)
         zeros = [s.length for s in out]
-        self.assertEqual(zeros, [15, 2])
+        self.assertEqual(zeros, [14, 2])
 
     def _symbol_0_0(self, has, arr):
         out = codec.run_length_coding(np.array(arr))
@@ -71,7 +71,7 @@ class CodecTest(unittest.TestCase):
         )
         hic = codec.jpeg_encode(compressed)
         payloads = hic.payloads
-        self.assertEqual(len(payloads), 19)
+        self.assertEqual(len(payloads), 20)
         self.assertEqual(hic.hic_type, model.Compression.JPEG)
         self.assertEqual(payloads[0].payloads[0].numbers, (1, 1))
 
@@ -130,3 +130,59 @@ class CodecTest(unittest.TestCase):
             codec.RunLength(11, 3),
             codec.RunLength(0, 0)
         ])
+
+    def test_zero_block_reconstruct(self):
+        matrix = np.array([
+            [0, 0, 11, 0],
+            [0, 0, 0, 0]
+        ])
+        lin = transform.zigzag(matrix)
+        out = codec.run_length_coding(lin)
+        invert = codec.decode_run_length(out, 8)
+        self.assertEqual(lin, invert)
+
+    def test_rle_segment(self):
+        rle = codec.RunLength(10, 0)
+        self.assertEqual(rle.segment, [10])
+
+        rle = codec.RunLength(9, 3)
+        self.assertEqual(rle.segment, [0, 0, 0, 9])
+
+    def test_rle_max_len(self):
+        arr = [0, 0, 0, 0, 0, 1]
+        rle = codec.run_length_coding(np.array(arr))
+        invert = codec.decode_run_length(rle, len(arr))
+        self.assertEqual(arr, invert)
+
+    def test_rle_consecutives(self):
+        arr = [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+        rle = codec.run_length_coding(np.array(arr))
+        invert = codec.decode_run_length(rle, len(arr))
+        self.assertEqual(invert, arr)
+
+    def test_rle_random(self):
+        arr = [np.random.randint(-5, 5) for _ in range(10000)]
+        rle = codec.run_length_coding(np.array(arr))
+        invert = codec.decode_run_length(rle, 10000)
+        self.assertEqual(invert, arr)
+
+    def test_rle_break_plus_1(self):
+        arr = [0, 0, 0, 0, 0, 1]
+        rle = codec.run_length_coding(np.array(arr), max_len=4)
+        invert = codec.decode_run_length(rle, len(arr))
+        self.assertEqual(invert, arr)
+
+    def test_rle_max_double(self):
+        arr = [-1, 0, 0, 0, 0, 1, 2]
+        rle = codec.run_length_coding(np.array(arr), max_len=4)
+        invert = codec.decode_run_length(rle, len(arr))
+        self.assertEqual(arr, invert)
+
+    def test_accidental_combine(self):
+        rle = [
+            codec.RunLength(value=0, length=14),
+            codec.RunLength(value=31, length=0)
+        ]
+        invert = codec.decode_run_length(rle, 15)
+        rle_2 = codec.run_length_coding(invert, max_len=0xF)
+        self.assertEqual(rle, rle_2)

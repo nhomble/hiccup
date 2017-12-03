@@ -26,7 +26,7 @@ class RunLength:
     def from_dict(cls, d):
         return cls(d["value"], d["zeros"])
 
-    def __init__(self, value, length):
+    def __init__(self, value=0, length=0):
         self.value = value
         self.length = length
 
@@ -53,23 +53,22 @@ def differential_coding(blocks: np.ndarray):
     return utils.differences(dc_comps)
 
 
-def _break_up_rle(code, max_len):
-    l = code["zeros"]
-    div = l // max_len
-    full = {
-        "zeros": max_len,
-        "value": code["value"]
-    }
-    return ([full] * div) + [{
-        "zeros": l - (div * max_len),
-        "value": code["value"]
-    }]
-
-
 def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
     """
     Come up with the run length encoding for a matrix
     """
+
+    def _break_up_rle(code, max_len):
+        l = code["zeros"]
+        div = l // max_len
+        full = {
+            "zeros": max_len - 1,  # minus 1 because we get another for free from the value
+            "value": 0
+        }
+        return ([full] * div) + [{
+            "zeros": l - (div * max_len),
+            "value": code["value"]
+        }]
 
     def reduction(agg, next):
         if "value" in agg[-1]:
@@ -92,16 +91,24 @@ def run_length_coding(arr: np.ndarray, max_len=0xF) -> List[RunLength]:
 
     # the goal of RLE in the case of compression is to contain the first symbol (length, size) within a byte
     # so if the length is too long, then we need to break it up
-    rl = [_break_up_rle(code, max_len) for code in rl]
-    rl = utils.flatten(rl)
+    if max_len is not None:
+        rl = [_break_up_rle(code, max_len) for code in rl]
+        rl = utils.flatten(rl)
 
     return [RunLength.from_dict(r) for r in rl]
 
 
 def decode_run_length(rles: List[RunLength], length: int):
-    arr = utils.flatten([d.segment for d in rles])
-    fill = length - len(arr)  # it's a hard length because I know what it should be
-    arr += ([0] * fill)
+    arr = []
+    for (i, d) in enumerate(rles):
+        arr.append(d.segment)
+    arr = utils.flatten(arr)
+    # arr = utils.flatten([d.segment for d in rles])
+
+    if rles[-1].is_trailing:
+        fill = length - len(arr)
+        arr += ([0] * fill)
+
     return arr
 
 
@@ -110,45 +117,46 @@ def wavelet_encode(luminance: list, chrominances: List[list]):
     In brief reading of literature, Huffman coding is still considered for wavelet image compression.
     """
 
-    def lin(L):
-        return utils.flatten([utils.img_as_list(i) for i in L])
-
-    full_lum_data = lin(luminance)
-    utils.debug_msg("Full wavelet luminance data length: %d" % len(full_lum_data))
-    utils.debug_msg("Full wavelet luminance data\n%s" % " ".join([str(i) for i in full_lum_data]))
-    rl_lum_data = run_length_coding(full_lum_data)
-    zlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["zeros"])
-    vlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["value"])
-
-    utils.debug_msg("Constructed luminance wavelet huffmans")
-
-    rl_ch_1 = run_length_coding(lin(chrominances[0]))
-    rl_ch_2 = run_length_coding(lin(chrominances[1]))
-    rl_chr_data = rl_ch_1 + rl_ch_2
-    zch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["zeros"])
-    vch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["value"])
-
-    utils.debug_msg("Constructed chrominance wavelet huffmans")
-
-    master_array = [
-        # huffman tables
-        hic.PlainString(zlum_huff.encode_table()),
-        hic.PlainString(vlum_huff.encode_table()),
-        hic.PlainString(zch_huff.encode_table()),
-        hic.PlainString(vch_huff.encode_table()),
-
-        hic.BitString(zlum_huff.encode_data()),
-        hic.BitString(vlum_huff.encode_data()),
-
-        hic.BitString(zch_huff.encode_data(data=rl_ch_1)),
-        hic.BitString(vch_huff.encode_data(data=rl_ch_1)),
-        hic.BitString(zch_huff.encode_data(data=rl_ch_2)),
-        hic.BitString(vch_huff.encode_data(data=rl_ch_2)),
-
-        hic.PlainString(encode_shape(luminance[0].shape)),
-        hic.PlainString(encode_shape(luminance[-1].shape))
-    ]
-    return master_array
+    # def lin(L):
+    #     return utils.flatten([utils.img_as_list(i) for i in L])
+    #
+    # full_lum_data = lin(luminance)
+    # utils.debug_msg("Full wavelet luminance data length: %d" % len(full_lum_data))
+    # utils.debug_msg("Full wavelet luminance data\n%s" % " ".join([str(i) for i in full_lum_data]))
+    # rl_lum_data = run_length_coding(full_lum_data)
+    # zlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["zeros"])
+    # vlum_huff = huffman.HuffmanTree.construct_from_data(rl_lum_data, key_func=lambda rl: rl["value"])
+    #
+    # utils.debug_msg("Constructed luminance wavelet huffmans")
+    #
+    # rl_ch_1 = run_length_coding(lin(chrominances[0]))
+    # rl_ch_2 = run_length_coding(lin(chrominances[1]))
+    # rl_chr_data = rl_ch_1 + rl_ch_2
+    # zch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["zeros"])
+    # vch_huff = huffman.HuffmanTree.construct_from_data(rl_chr_data, key_func=lambda rl: rl["value"])
+    #
+    # utils.debug_msg("Constructed chrominance wavelet huffmans")
+    #
+    # master_array = [
+    #     # huffman tables
+    #     hic.PlainString(zlum_huff.encode_table()),
+    #     hic.PlainString(vlum_huff.encode_table()),
+    #     hic.PlainString(zch_huff.encode_table()),
+    #     hic.PlainString(vch_huff.encode_table()),
+    #
+    #     hic.BitString(zlum_huff.encode_data()),
+    #     hic.BitString(vlum_huff.encode_data()),
+    #
+    #     hic.BitString(zch_huff.encode_data(data=rl_ch_1)),
+    #     hic.BitString(vch_huff.encode_data(data=rl_ch_1)),
+    #     hic.BitString(zch_huff.encode_data(data=rl_ch_2)),
+    #     hic.BitString(vch_huff.encode_data(data=rl_ch_2)),
+    #
+    #     hic.PlainString(encode_shape(luminance[0].shape)),
+    #     hic.PlainString(encode_shape(luminance[-1].shape))
+    # ]
+    # return master_array
+    pass
 
 
 def wavelet_decode_pull_subbands(data, shapes):
@@ -269,6 +277,9 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
     def ac_comp_fun(k, v):
         splits = transform.split_matrix(v, settings.JPEG_BLOCK_SIZE)
         acs = transform.ac_components(splits)
+        if k == "lum":
+            s = [str(i) for i in acs]
+            print(" ".join(s))
         out = run_length_coding(acs)
         return out
 
@@ -300,7 +311,10 @@ def jpeg_encode(compressed: model.CompressedImage) -> hic.HicImage:
         encode_data(ac_value_huffs),
         encode_data(ac_length_huffs),
 
-        [hic.IntegerString2P(compressed.shape[0], compressed.shape[1])]
+        [
+            hic.IntegerString2P(compressed.shape[0][0], compressed.shape[0][1]),
+            hic.IntegerString2P(compressed.shape[1][0], compressed.shape[1][1])
+        ]
     ])
     return hic.HicImage.jpeg_image(payloads)
 
@@ -357,18 +371,30 @@ def jpeg_decode(hic: hic.HicImage) -> model.CompressedImage:
         "cr": huffman_data_decode(payloads[16], ac_length_huffs["cr"]),
         "cb": huffman_data_decode(payloads[17], ac_length_huffs["cb"]),
     }
-    shape = payloads[18].numbers
+    shapes = {
+        "lum": payloads[18].numbers,
+        "cr": payloads[19].numbers,
+        "cb": payloads[19].numbers
+    }
     utils.debug_msg("Unloaded all of the data")
     # ====
 
     sub_length = utils.size(settings.JPEG_BLOCK_SHAPE()) - 1
-    ac_length = utils.size(shape) - len(dc_comps["lum"])
+    utils.debug_msg("Calculating AC RLEs")
     ac_rle = utils.dict_map(ac_values,
                             lambda k, v: [RunLength(t[1], t[0]) for t in list(zip(ac_lengths[k], v))])
-    ac_mats = utils.dict_map(ac_rle,
-                             lambda _, v: decode_run_length(v, ac_length))
-    ac_mats = utils.dict_map(ac_mats,
-                             lambda _, v: utils.group_tuples(v, sub_length))
+
+    def ac_mat_fun(k, v):
+        utils.debug_msg("Determining deficient AC matricies for: " + k)
+        ac_length = utils.size(shapes[k]) - len(dc_comps[k])
+        out = decode_run_length(v, ac_length)
+        if k == "lum":
+            s = [str(i) for i in out]
+            print(" ".join(s))
+        return out
+
+    ac_mats = utils.dict_map(ac_rle, ac_mat_fun)
+    ac_mats = utils.dict_map(ac_mats, lambda _, v: utils.group_tuples(v, sub_length))
     dc_comps = utils.dict_map(dc_comps, lambda _, v: utils.invert_differences(v))
 
     def merge_comps(dc_key, dc_values):
@@ -381,5 +407,5 @@ def jpeg_decode(hic: hic.HicImage) -> model.CompressedImage:
         return mats
 
     compressed = utils.dict_map(dc_comps, merge_comps)
-    merged = utils.dict_map(compressed, lambda _, v: transform.merge_blocks(np.array(v), shape))
+    merged = utils.dict_map(compressed, lambda k, v: transform.merge_blocks(np.array(v), shapes[k]))
     return model.CompressedImage.from_dict(merged)

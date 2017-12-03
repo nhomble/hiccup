@@ -2,6 +2,7 @@ import abc
 from typing import List
 import pickle
 
+import hiccup.utils as utils
 import hiccup.model as model
 import hiccup.settings as settings
 
@@ -89,6 +90,7 @@ class HicImage:
         return bytearray()
 
     def write_file(self, path):
+        utils.debug_msg("Writing HIC file to: " + path)
         with open(path, 'wb') as f:
             pickle.dump(self, f)
 

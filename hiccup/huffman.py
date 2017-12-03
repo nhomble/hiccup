@@ -22,10 +22,40 @@ class HuffmanTree:
         return cls(root, leaves, data, key_func)
 
     @classmethod
-    def construct_from_coding(cls, segments):
+    def construct_from_leaves(cls, segments, key_func=utils.identity):
         leaves = [cls.Node.leaf(*s) for s in segments]
         root, leaves = cls._construct(leaves)
-        return cls(root, leaves, None, None)
+        return cls(root, leaves, None, key_func)
+
+    @classmethod
+    def construct_from_coding(cls, segments, key_func=utils.identity):
+        """
+        When we store in binary it's going to be (value, symbol), from the symbol we can place our value back in the
+        correct place of the tree
+        """
+        d = dict([(t[1], t[0]) for t in segments])
+
+        levels = len(sorted(segments, key=lambda t: len(t[1]))[-1][1])
+        root = cls.Node(None, None, None, None)
+        leaves = []
+
+        # the side effects are real
+        def h_trav(r, depth, s):
+            if s in d:
+                # I am really a leaf
+                leaves.append(r)
+                r.value = d[s]
+                return
+            if depth != levels:
+                r.left = cls.Node.leaf(None, None)
+                h_trav(r.left, depth + 1, s + "1")
+
+                r.right = cls.Node.leaf(None, None)
+                h_trav(r.right, depth + 1, s + "0")
+                r.mass_adopt()
+
+        h_trav(root, 0, '')
+        return cls(root, leaves, None, key_func)
 
     @classmethod
     def _construct(cls, leaves):
@@ -86,6 +116,18 @@ class HuffmanTree:
         self.cache(self.get_leaf, value, out)
         return out
 
+    def translate_path(self, path, str=""):
+        if len(path) < 2:
+            return str
+        child = path[-2]
+        parent = path[-1]
+        path = path[:-1]
+        if parent.left == child:
+            return self.translate_path(path, str=str + "1")
+        elif parent.right == child:
+            return self.translate_path(path, str=str + "0")
+        raise RuntimeError("Invalid state")
+
     def encode_data(self, data=None):
         """
         Construct binary encoding with Huffman tree
@@ -93,26 +135,15 @@ class HuffmanTree:
         if data is None:
             data = self.data
 
-        def translate_path(path, str=""):
-            if len(path) < 2:
-                return str
-            child = path[-2]
-            parent = path[-1]
-            path = path[:-1]
-            if parent.left == child:
-                return translate_path(path, str=str + "1")
-            elif parent.right == child:
-                return translate_path(path, str=str + "0")
-            raise RuntimeError("Invalid state")
-
         paths = [self.get_leaf(self.key_func(d)).path() for d in data]
         utils.debug_msg("Got %d paths" % len(paths))
-        strs = [translate_path(path) for path in paths]
+        strs = [self.translate_path(path) for path in paths]
         utils.debug_msg("Got the strs")
         return "".join(strs)
 
     def encode_table(self):
         s = [n.encoding for n in self.leaves]
+        s = [(t[0], self.translate_path(t[1])) for t in s]
         return s
 
     def decode_data(self, str):
@@ -140,7 +171,7 @@ class HuffmanTree:
             "node": self.root
         }])
         # chop last one because the reduction anticipates more values
-        return [v["value"] for v in values]
+        return [v["value"] for v in values if "value" in v]
 
     class Node:
         GROUND = None
@@ -187,9 +218,15 @@ class HuffmanTree:
             child.parent = self
             return self
 
+        def mass_adopt(self):
+            """
+            During reconstruction just adopt both
+            """
+            self.inherit(self.left).inherit(self.right)
+
         @property
         def encoding(self):
-            return self.value, self.frequency
+            return self.value, self.path()
 
         @property
         def is_leaf(self):
@@ -198,6 +235,13 @@ class HuffmanTree:
         @property
         def is_root(self):
             return self.parent is self.ROOT
+
+        @property
+        def depth(self):
+            if self.is_leaf:
+                return 1
+            else:
+                return 1 + max(self.left.depth, self.right.depth)
 
         def __eq__(self, other):
             return type(self) == type(other) and self.id == other.id
