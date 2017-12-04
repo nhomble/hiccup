@@ -17,6 +17,7 @@ def is_gui(args):
 
 
 def run_gui():
+    settings.DEBUG = True # who cares, you're staring at that ugly tkinter window anyway
     root = Tk()
     _ = BelchUI(root)
     root.mainloop()
