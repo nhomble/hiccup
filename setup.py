@@ -25,5 +25,6 @@ setup(
         "rawpy",
         "PyWavelets",
         "scipy",
+        "bitstring"
     ],
 )
