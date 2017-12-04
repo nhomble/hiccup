@@ -4,7 +4,7 @@ import pickle
 
 import hiccup.utils as utils
 import hiccup.model as model
-import hiccup.settings as settings
+import hiccup.iohelper as io
 
 """
 Wrap the representation of a HIC image to make it easier to write/retrieve from byte stream
@@ -41,6 +41,9 @@ class TupP(Payload):
         self.n1 = n1
         self.n2 = n2
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self.n1 == other.n1 and self.n2 == other.n2
+
     @property
     def numbers(self):
         return self.n1, self.n2
@@ -57,15 +60,17 @@ class BitStringP(Payload):
 
     @classmethod
     def from_bytes(cls, b):
-        i = int(b, 2)
-        return utils.bin_string(i)
+        return cls(io.padded_bytes_2_bs(b))
 
     def __init__(self, string: str):
         self.payload = string
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self.payload == other.payload
+
     @property
     def byte_stream(self):
-        return bin(int(self.payload, 2))
+        return io.padded_bs_2_bytes(self.payload)
 
 
 class PlainStringP(Payload):
@@ -80,6 +85,9 @@ class PlainStringP(Payload):
 
     def __init__(self, string: str):
         self.payload = string
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.payload == other.payload
 
     @property
     def byte_stream(self):
@@ -102,6 +110,9 @@ class PayloadStringP(Payload):
         self.t = t
         self.payloads = payloads
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self.t == other.t and self.payloads == other.payloads
+
     @property
     def byte_stream(self):
         return pickle.dumps({
@@ -110,22 +121,25 @@ class PayloadStringP(Payload):
         })
 
 
-class HicImage(Payload):
+class HicImage:
     @classmethod
-    def from_bytes(cls, b):
-        payloads = pickle.loads(b)
-        t = PlainStringP.from_bytes(payloads[0]).payload
-        if t == model.Compression.JPEG.value:
-            pass
-        elif t == model.Compression.HIC.value:
-            pass
+    def from_bytes(cls, raw_data):
+        t = model.Compression(PlainStringP.from_bytes(raw_data[0]).payload)
+        if t == model.Compression.JPEG:
+            # huffs
+            # tree per data per channel == 9
+            huffs = [PayloadStringP.from_bytes(b) for b in raw_data[1:10]]
+            # data
+            data = [BitStringP.from_bytes(b) for b in raw_data[10:19]]
+            # shapes
+            shapes = [TupP.from_bytes(b) for b in raw_data[19:21]]
+            return cls.jpeg_image(huffs + data + shapes)
         else:
-            raise RuntimeError("Illegal type: " + t)
-
-    @property
-    def byte_stream(self):
-        full = self.settings + self.payload
-        return pickle.dumps([p.byte_stream for p in full])
+            assert t == model.Compression.HIC
+            huffs = [PayloadStringP.from_bytes(b) for b in raw_data[1:7]]
+            data = [BitStringP.from_bytes(b) for b in raw_data[7:13]]
+            shapes = [TupP.from_bytes(b) for b in raw_data[13:15]]
+            return cls.wavelet_image(huffs + data + shapes)
 
     @classmethod
     def wavelet_image(cls, payloads):
@@ -142,10 +156,12 @@ class HicImage(Payload):
         ]
         return cls(model.Compression.JPEG, settings_list, payloads)
 
-    @staticmethod
-    def from_file(path):
+    @classmethod
+    def from_file(cls, path):
         with open(path, 'rb') as f:
-            return pickle.load(f)
+            raw_data = pickle.load(f)
+        assert raw_data is not None
+        return cls.from_bytes(raw_data)
 
     def __init__(self, hic_type: model.Compression, settings: List[Payload], payloads: List[Payload]):
         self.hic_type = hic_type
@@ -155,8 +171,13 @@ class HicImage(Payload):
     def write_file(self, path):
         utils.debug_msg("Writing HIC file to: " + path)
         with open(path, 'wb') as f:
-            pickle.dump(self, f)
+            pickle.dump(self.byte_stream(), f)
 
     @property
-    def payload(self):
+    def payloads(self):
         return self._payloads
+
+    def byte_stream(self):
+        data = self.settings + self.payloads
+        data = [p.byte_stream for p in data]
+        return data
