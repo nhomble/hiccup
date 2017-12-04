@@ -46,3 +46,4 @@ class BelchUI:
 
     def compress(self):
         run.compress(self.filename, self.dir, model.Compression(self.style_var.get()))
+        print("=== Completed compression ===")
