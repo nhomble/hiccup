@@ -319,5 +319,5 @@ def salt_pepper(img: np.ndarray, prob=.01):
 
     vector = np.vectorize(_vec)
 
-    mapped = [vector(s) for s in splits]
+    mapped = [vector(s).astype(np.uint8) for s in splits]
     return cv2.merge(mapped)
