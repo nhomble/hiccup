@@ -1,3 +1,4 @@
+import random
 import unittest
 
 import hiccup.iohelper as io
@@ -26,7 +27,17 @@ class IOHelperTest(unittest.TestCase):
             "0000",
             "1010000",
             "00000",
-            "000111"
+            "000111",
+            "00000001",
+            "000001",
+            "0000001",
+            "10010110"
         ]
         for case in cases:
             self._check_pb(case)
+
+    def test_random(self):
+        for _ in range(100):
+            i = random.randint(0, 100000)
+            b = io.bin_string(i)
+            self._check_pb(b)
