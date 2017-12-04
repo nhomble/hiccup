@@ -138,9 +138,3 @@ def is_gray(img: np.ndarray):
     """
     return len(img.shape) == 2 and img.shape[0] > 1 and img.shape[1] > 1
 
-
-def bin_string(i: int):
-    """
-    Binary string
-    """
-    return bin(i)[2:]
