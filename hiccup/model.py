@@ -31,6 +31,8 @@ class QTables(enum.Enum):
 class Wavelet(enum.Enum):
     DAUBECHIE = "db1"
     HAAR = "haar"
+    COIF = "coif1"
+    SYM = "sym2"
 
 
 class CompressedImage:
